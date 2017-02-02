@@ -1,10 +1,18 @@
+#include "Encoder.h"
 #include "DualVNH5019MotorShield.h"
-#include <Encoder.h>
+#include "PinChangeInt.h"
+
+
+#define enA1    3
+#define enB1    5
+#define enA2    11
+#define enB2    13
+
 DualVNH5019MotorShield md;
-//
-//#define encoderPinA1    9
-//#define encoderPinB1    10
-//
+Encoder en(enA1,enB1,enA2,enB2);
+unsigned long lastMilliPrint = 0;
+
+
 //void stopIfFault()
 //{
 //  if (md.getM1Fault())
@@ -18,28 +26,39 @@ DualVNH5019MotorShield md;
 //    while(1);
 //  }
 //}
-//
-Encoder en(3,5,11,13);
-unsigned long lastMilliPrint = 0;
-int count = 0;
+
+
 void setup()
 {
   Serial.begin(115200);
-//  Serial.println("Dual VNH5019 Motor Shield");
-  attachInterrupt(digitalPinToInterrupt(3), readEncoder1, FALLING);
-//  md.init();
+  md.init();
+  en.init();
+
+  //pull-up/down resistor
+  digitalWrite(enA1, HIGH);
+  digitalWrite(enA2, HIGH);
+  digitalWrite(enB1, LOW);
+  digitalWrite(enB2, LOW);
+
+  //Attach interrupts to encoder pins
+  attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
+  PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
 }
-//
 
 void readEncoder1(){
-  en.rencoder();
+  en.rencoder1();
 }
+
+void readEncoder2(){
+  en.rencoder2();
+}
+
 void loop()
 {
   if ((millis() - lastMilliPrint) >= 150)
   {
     lastMilliPrint = millis();
-    int val = en.getRPM();
+    int val = en.getMotor1RPM();
     if (val<2000){
       Serial.println(val);
     }
@@ -116,12 +135,3 @@ void loop()
 //    delay(2);
 //  }
 }
-//
-//
-//////Read Encoder
-////void rencoder(){
-////  if (digitalRead(encodPinB1) == HIGH)
-////    count--;                // if encoder pin 2 = HIGH then count --
-////  else
-////    count++;                // if encoder pin 2 = LOW then count ++
-////}
