@@ -29,7 +29,7 @@ double Encoder::getMotor1RPM(){
 
 double Encoder::getMotor2RPM(){
 	static long countAnt2 = 0;
-	speed = ((count - countAnt) * (60 * (1000 / time))) / (30);
+	speed = -((count - countAnt) * (60 * (1000 / time))) / (30);
 	countAnt2 = count;
 	return speed;
 }
