@@ -1,7 +1,6 @@
 #include "Arduino.h"
 #include "Encoder.h"
 
-#define time 100
 
 Encoder::Encoder(unsigned char pinA, unsigned char pinB, unsigned char pinC, unsigned char pinD){
 	pinA1 = pinA;
@@ -17,20 +16,19 @@ void Encoder::init(){
 	pinMode(pinB2, INPUT);
 	count1 = 0;
 	count2 = 0;
-	speed = 0;
 }
 
 double Encoder::getMotor1RPM(){
 	static long countAnt1 = 0;
-	speed = ((count - countAnt) * (60 * (1000 / time))) / (30);
-	countAnt1 = count;
+	int speed = (count1 - countAnt1) * (140.0 / 195.0);
+	countAnt1 = count1;
 	return speed;
 }
 
 double Encoder::getMotor2RPM(){
 	static long countAnt2 = 0;
-	speed = -((count - countAnt) * (60 * (1000 / time))) / (30);
-	countAnt2 = count;
+	int speed = -(count2 - countAnt2) * (146.0 / 197.0);
+	countAnt2 = count2;
 	return speed;
 }
 
@@ -46,4 +44,12 @@ void Encoder::rencoder2()  {
     count2++; 
   else
     count2--;
+}
+
+int Encoder::getCount1(){
+	return count1;
+}
+
+int Encoder::getCount2(){
+	return count2;
 }

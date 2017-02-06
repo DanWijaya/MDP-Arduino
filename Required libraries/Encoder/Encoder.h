@@ -12,7 +12,6 @@ class Encoder
 		unsigned char pinB2;
 		volatile unsigned int count1;
 		volatile unsigned int count2;
-		double speed;
 		
 	public:
 		//constructor
@@ -23,6 +22,8 @@ class Encoder
 		void rencoder2();
 		double getMotor1RPM();
 		double getMotor2RPM();
+		int getCount1();
+		int getCount2();
 };
 
 #endif

@@ -17,3 +17,12 @@ Available Pin:
 * A3	free
 * A4	free
 * A5	free
+
+Motor Info:
+* Motor 1
+	* 400 -> -134rpm -> -193
+	*-400 ->  140rpm ->  195
+
+*Motor 2
+	* 400 ->  146rpm ->  196
+	*-400 -> -150rpm -> -208
