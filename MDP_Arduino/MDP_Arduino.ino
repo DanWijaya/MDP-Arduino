@@ -1,11 +1,27 @@
 #include "Encoder.h"
 #include "DualVNH5019MotorShield.h"
 #include "PinChangeInt.h"
+#include "SharpIR.h"
+#include "PID_v1.h"
+#include <math.h>
 
 #define enA1    3
 #define enB1    5
 #define enA2    11
 #define enB2    13
+#define wheelRadius 0.15
+#define distanceBetweenWheels 0.25
+/**
+ * Function Declarations
+ */
+
+void moveRobot(float, float);
+void straight(float);
+void turn(float);
+void readEncoder1();
+void readEncoder2();
+void getRpm();
+void getCmd();
 
 DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
@@ -14,21 +30,6 @@ int rpm2 = 0;
 int currSpeed1 = 0;
 int currSpeed2 = 0;
 unsigned long lastMilliPrint = 0;
-
-//void stopIfFault()
-//{
-//  if (md.getM1Fault())
-//  {
-//    Serial.println("M1 fault");
-//    while(1);
-//  }
-//  if (md.getM2Fault())
-//  {
-//    Serial.println("M2 fault");
-//    while(1);
-//  }
-//}
-
 
 void setup()
 {
@@ -47,6 +48,74 @@ void setup()
   PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
 }
 
+void loop()
+{
+  getCmd();
+  getRpm();
+}
+
+void moveRobot(float v, float w) {
+  float vl, vr;
+  vl = (2 * v + w * distanceBetweenWheels)/(2 * wheelRadius);
+  vr = (2 * v - w * distanceBetweenWheels)/(2 * wheelRadius);
+  md.setM1Speed(-vl);
+  md.setM2Speed(vr);
+}
+
+void straight(float distance) {
+  float distanceL, distanceR, distanceTraversed, angular_error, v, w;
+  distanceTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  angular_error = 0;
+  v = 0;
+  w = 0;
+
+  PID_linear = PID(&distanceTraversed, &v, &distance, 1, 1, 0.1, DIRECT);
+  PID_angular = PID(&angular_error, &w, 0, 1, 1, 0.1, DIRECT);
+  
+  while ( math.abs(distanceTraversed-distance) <= 0.01 ){
+    en.rencoder1();
+    en.rencoder2();
+    distanceL = 2 * (22/7) * wheelRadius * en.getCount1());
+    distanceR = 2 * (22/7) * wheelRadius * en.getCount2());
+    
+    distanceTraversed = (distanceL + distanceR)/2;
+    
+    angular_error = distanceL - distanceR;
+
+    PID_linear.compute();
+    PID_angular.compute();
+
+    moveRobot(v, w);
+  }
+}
+
+void turn(float angle) {
+  float distanceL, distanceR, angleTraversed, angular_error, v, w;
+  angleTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  v = 0;
+  w = 0;
+
+  PID_angular = PID(&angleTraversed, &w, &angle, 1, 1, 0.1, DIRECT);
+  
+  while ( math.abs(angleTraversed-angle) <= 0.001 ){
+    en.rencoder1();
+    en.rencoder2();
+    distanceL = 2 * (22/7) * wheelRadius * en.getCount1());
+    distanceR = 2 * (22/7) * wheelRadius * en.getCount2());
+
+    angleTraversed = (distanceR - distanceL)/distanceBetweenWheels;
+    angleTraversed = (angleTraversed * 4068) / 71;
+
+    PID_angular.compute();
+    
+    moveRobot(0, w);
+  }
+}
+
 void readEncoder1() {
   en.rencoder1();
 }
@@ -55,80 +124,35 @@ void readEncoder2() {
   en.rencoder2();
 }
 
-void loop()
-{
-  getCmd();
-  getRpm();
-}
-
 void getCmd() {
   char cmd;
   if (!Serial.available())    return;
   delay(10);
-  cmd = Serial.read();                                // get command byte
-  Serial.flush();                                     // clean serial buffer
+  cmd = Serial.read();
+  Serial.flush();
 
 
-  //w   :   forward
-  //s   :   reverse
-  //a  :   left turn on the spot
-  //d  :   right turn on the spot
+  /*
+   * w: forward
+   * s: backward
+   * a: left
+   * d: right
+   */
   switch (cmd) {
     case 'w':
-      if (currSpeed1 >= currSpeed2) {
-        currSpeed2 = currSpeed1;
-      }
-      else {
-        currSpeed1 = currSpeed2;
-      }
-
-      for ( ; currSpeed1 <= 400; currSpeed1 += 1) {
-        md.setM1Speed(-currSpeed1);
-        md.setM2Speed(currSpeed1);
-        delay(2);
-      }
+      straight(10.0);
       break;
-
     case 's':
-      if (currSpeed1 <= currSpeed2) {
-        currSpeed2 = currSpeed1;
-      }
-      else {
-        currSpeed1 = currSpeed2;
-      }
-
-      for ( ; currSpeed1 >= -400; currSpeed1 -= 1) {
-        md.setM1Speed(-currSpeed1);
-        md.setM2Speed(currSpeed1);
-        delay(2);
-      }
+      straight(-10.0);
       break;
-
     case 'a':
-      md.setM1Speed(0);
-      md.setM2Speed(0);
-      for (currSpeed1 = 0, currSpeed2 = 0 ; currSpeed1 <= 400; currSpeed1 += 1, currSpeed2 -= 1) {
-        md.setM1Speed(currSpeed1);
-        md.setM2Speed(currSpeed2);
-        delay(2);
-      }
-      delay(2);
+      turn(90.0);
       break;
-
     case 'd':
-      md.setM1Speed(0);
-      md.setM2Speed(0);
-      for (currSpeed1 = 0, currSpeed2 = 0 ; currSpeed2 <= 400; currSpeed2 += 1, currSpeed1 -= 1) {
-        md.setM1Speed(currSpeed1);
-        md.setM2Speed(currSpeed2);
-        delay(2);
-      }
-      delay(2);
+      turn(-90.0);
       break;
-
     default:
-      Serial.print("Speed set error: ");
-      Serial.println(currSpeed1);
+      break;
   }
 }
 
