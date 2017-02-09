@@ -2,7 +2,6 @@
 #include "DualVNH5019MotorShield.h"
 #include "PinChangeInt.h"
 
-
 #define enA1    3
 #define enB1    5
 #define enA2    11
