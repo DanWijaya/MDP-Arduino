@@ -9,8 +9,12 @@
 #define enB1    5
 #define enA2    11
 #define enB2    13
-#define wheelRadius 0.15
-#define distanceBetweenWheels 0.25
+#define wheelRadius 0.015
+#define distanceBetweenWheels 0.175
+#define kp 1.0
+#define ki 1.0
+#define kd 0.0
+
 /**
  * Function Declarations
  */
@@ -27,8 +31,6 @@ DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
 int rpm1 = 0;
 int rpm2 = 0;
-int currSpeed1 = 0;
-int currSpeed2 = 0;
 unsigned long lastMilliPrint = 0;
 
 void setup()
@@ -44,8 +46,8 @@ void setup()
   digitalWrite(enB2, LOW);
 
   //Attach interrupts to encoder pins
-  //attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
-  //PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
+  attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
+  PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
 }
 
 void loop()
@@ -71,14 +73,12 @@ void straight(double distance) {
   v = 0;
   w = 0;
 
-  PID PID_linear(&distanceTraversed, &v, &distance, 1, 1, 0.1, DIRECT);
-  PID PID_angular(&angular_error, &w, 0, 1, 1, 0.1, DIRECT);
+  PID PID_linear(&distanceTraversed, &v, &distance, kp, ki, kd, DIRECT);
+  PID PID_angular(&angular_error, &w, 0, kp, ki, kd, DIRECT);
   
   while ( fabs(distanceTraversed-distance) <= 0.01 ){
-    en.rencoder1();
-    en.rencoder2();
-    distanceL = 2 * (22/7) * wheelRadius * en.getCount1();
-    distanceR = 2 * (22/7) * wheelRadius * en.getCount2();
+    distanceL = 2 * (22/7) * wheelRadius * en.getMotor1Revs();
+    distanceR = 2 * (22/7) * wheelRadius * en.getMotor2Revs();
     
     distanceTraversed = (distanceL + distanceR)/2;
     
@@ -99,13 +99,11 @@ void turn(double angle) {
   v = 0;
   w = 0;
 
-  PID PID_angular(&angleTraversed, &w, &angle, 1, 1, 0.1, DIRECT);
+  PID PID_angular(&angleTraversed, &w, &angle, kp, ki, kd, DIRECT);
   
   while ( fabs(angleTraversed-angle) <= 0.001 ){
-    en.rencoder1();
-    en.rencoder2();
-    distanceL = 2 * (22/7) * wheelRadius * en.getCount1();
-    distanceR = 2 * (22/7) * wheelRadius * en.getCount2();
+    distanceL = 2 * (22/7) * wheelRadius * en.getMotor1Revs();
+    distanceR = 2 * (22/7) * wheelRadius * en.getMotor2Revs();
 
     angleTraversed = (distanceR - distanceL)/distanceBetweenWheels;
     angleTraversed = (angleTraversed * 4068) / 71;
@@ -155,18 +153,3 @@ void getCmd() {
       break;
   }
 }
-
-void getRpm() {
-  if ((millis() - lastMilliPrint) >= 150) {
-    lastMilliPrint = millis();
-
-    rpm1 = en.getMotor1RPM();
-    rpm2 = en.getMotor2RPM();
-    Serial.print("   RPM1: ");
-    Serial.print(rpm1);
-    Serial.print("   RPM2: ");
-    Serial.print("\t");
-    Serial.println(rpm2);
-  }
-}
-

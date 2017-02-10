@@ -22,6 +22,8 @@ class Encoder
 		void rencoder2();
 		double getMotor1RPM();
 		double getMotor2RPM();
+		double getMotor1Revs();
+		double getMotor2Revs();
 		int getCount1();
 		int getCount2();
 };
