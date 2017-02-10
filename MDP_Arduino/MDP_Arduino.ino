@@ -3,7 +3,9 @@
 #include "PinChangeInt.h"
 #include "SharpIR.h"
 #include "PID_v1.h"
+
 #include <math.h>
+#include "Arduino.h"
 
 #define enA1    3
 #define enB1    5
@@ -11,16 +13,19 @@
 #define enB2    13
 #define wheelRadius 0.015
 #define distanceBetweenWheels 0.175
-#define kp 1.0
+#define kp 2.0
 #define ki 1.0
 #define kd 0.0
+#define angular_kp 0.1
+#define angular_ki 0.05
+#define angular_kd 0.0
 
 /**
  * Function Declarations
  */
 
 void moveRobot(float, float);
-void straight(float);
+void forward(float);
 void turn(float);
 void readEncoder1();
 void readEncoder2();
@@ -53,7 +58,6 @@ void setup()
 void loop()
 {
   getCmd();
-  getRpm();
 }
 
 void moveRobot(double v, double w) {
@@ -64,7 +68,7 @@ void moveRobot(double v, double w) {
   md.setM2Speed(vr);
 }
 
-void straight(double distance) {
+void forward(double distance) {
   double distanceL, distanceR, distanceTraversed, angular_error, v, w;
   distanceTraversed = 0;
   distanceL = 0;
@@ -72,26 +76,63 @@ void straight(double distance) {
   angular_error = 0;
   v = 0;
   w = 0;
-
   PID PID_linear(&distanceTraversed, &v, &distance, kp, ki, kd, DIRECT);
   PID PID_angular(&angular_error, &w, 0, kp, ki, kd, DIRECT);
+  PID_linear.SetMode(AUTOMATIC);
+  PID_angular.SetMode(AUTOMATIC);
   
-  while ( fabs(distanceTraversed-distance) <= 0.01 ){
-    distanceL = 2 * (22/7) * wheelRadius * en.getMotor1Revs();
-    distanceR = 2 * (22/7) * wheelRadius * en.getMotor2Revs();
+  while ( fabs(distance-distanceTraversed) > 0.01){
+    distanceL += 2 * (22/7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22/7) * wheelRadius * en.getMotor2Revs();
     
     distanceTraversed = (distanceL + distanceR)/2;
+    Serial.println("Distance: ");
+    Serial.println(distance-distanceTraversed);
     
     angular_error = distanceL - distanceR;
 
     PID_linear.Compute();
     PID_angular.Compute();
-
-    moveRobot(v, w);
+    
+    moveRobot(-v, -w);
   }
+  md.setM1Speed(0);
+  md.setM2Speed(0);
 }
 
-void turn(double angle) {
+void backward(double distance) {
+  double distanceL, distanceR, distanceTraversed, angular_error, v, w;
+  distanceTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  angular_error = 0;
+  v = 0;
+  w = 0;
+  PID PID_linear(&distanceTraversed, &v, &distance, kp, ki, kd, DIRECT);
+  PID PID_angular(&angular_error, &w, 0, kp, ki, kd, DIRECT);
+  PID_linear.SetMode(AUTOMATIC);
+  PID_angular.SetMode(AUTOMATIC);
+  
+  while ( fabs(distance-distanceTraversed) > 0.01){
+    distanceL += 2 * (22/7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22/7) * wheelRadius * en.getMotor2Revs();
+    
+    distanceTraversed = -(distanceL + distanceR)/2;
+    Serial.println("Distance: ");
+    Serial.println(distance-distanceTraversed);
+    
+    angular_error = distanceL - distanceR;
+
+    PID_linear.Compute();
+    PID_angular.Compute();
+    
+    moveRobot(v, w);
+  }
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+}
+
+void left(double angle) {
   double distanceL, distanceR, angleTraversed, angular_error, v, w;
   angleTraversed = 0;
   distanceL = 0;
@@ -99,19 +140,46 @@ void turn(double angle) {
   v = 0;
   w = 0;
 
-  PID PID_angular(&angleTraversed, &w, &angle, kp, ki, kd, DIRECT);
-  
-  while ( fabs(angleTraversed-angle) <= 0.001 ){
-    distanceL = 2 * (22/7) * wheelRadius * en.getMotor1Revs();
-    distanceR = 2 * (22/7) * wheelRadius * en.getMotor2Revs();
+  PID PID_angular(&angleTraversed, &w, &angle, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID_angular.SetMode(AUTOMATIC);
+  while ( fabs(angle-fabs(angleTraversed)) > 0.01 ){
+    distanceL += 2 * (22/7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22/7) * wheelRadius * en.getMotor2Revs();
 
     angleTraversed = (distanceR - distanceL)/distanceBetweenWheels;
     angleTraversed = (angleTraversed * 4068) / 71;
-
+    Serial.println(angleTraversed);
     PID_angular.Compute();
     
     moveRobot(0, w);
   }
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+}
+
+void right(double angle) {
+  double distanceL, distanceR, angleTraversed, angular_error, v, w;
+  angleTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  v = 0;
+  w = 0;
+
+  PID PID_angular(&angleTraversed, &w, &angle, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID_angular.SetMode(AUTOMATIC);
+  while ( fabs(angle-fabs(angleTraversed)) > 0.01 ){
+    distanceL += 2 * (22/7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22/7) * wheelRadius * en.getMotor2Revs();
+
+    angleTraversed = (distanceR - distanceL)/distanceBetweenWheels;
+    angleTraversed = (angleTraversed * 4068) / 71;
+    Serial.println(angleTraversed);
+    PID_angular.Compute();
+    
+    moveRobot(0, -w);
+  }
+  md.setM1Speed(0);
+  md.setM2Speed(0);
 }
 
 void readEncoder1() {
@@ -138,16 +206,16 @@ void getCmd() {
    */
   switch (cmd) {
     case 'w':
-      straight(10.0);
+      forward(0.1);
       break;
     case 's':
-      straight(-10.0);
+      backward(0.1);
       break;
     case 'a':
-      turn(90.0);
+      left(90.0);
       break;
     case 'd':
-      turn(-90.0);
+      right(90.0);
       break;
     default:
       break;

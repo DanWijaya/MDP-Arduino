@@ -35,13 +35,13 @@ double Encoder::getMotor2RPM(){
 double Encoder::getMotor1Revs(){
 	int res = count1 - countAnt1;
 	countAnt1 = count1;
-	return res/2248.86;
+	return res/562.215;
 }
 
 double Encoder::getMotor2Revs(){
 	int res = -(count2 - countAnt2);
 	countAnt2 = count2;
-	return res/2248.86;
+	return res/562.215;
 }
 
 void Encoder::rencoder1()  {
