@@ -87,7 +87,7 @@ void forward(double distance) {
     
     distanceTraversed = (distanceL + distanceR)/2;
     Serial.println("Distance: ");
-    Serial.println(distance-distanceTraversed);
+    Serial.println(distanceTraversed);
     
     angular_error = distanceL - distanceR;
 
@@ -96,8 +96,7 @@ void forward(double distance) {
     
     moveRobot(-v, -w);
   }
-  md.setM1Speed(0);
-  md.setM2Speed(0);
+  moveRobot(0.0,0.0);
 }
 
 void backward(double distance) {
@@ -128,8 +127,7 @@ void backward(double distance) {
     
     moveRobot(v, w);
   }
-  md.setM1Speed(0);
-  md.setM2Speed(0);
+  moveRobot(0.0,0.0);
 }
 
 void left(double angle) {
@@ -153,8 +151,7 @@ void left(double angle) {
     
     moveRobot(0, w);
   }
-  md.setM1Speed(0);
-  md.setM2Speed(0);
+  moveRobot(0.0,0.0);
 }
 
 void right(double angle) {
@@ -178,8 +175,7 @@ void right(double angle) {
     
     moveRobot(0, -w);
   }
-  md.setM1Speed(0);
-  md.setM2Speed(0);
+  moveRobot(0.0,0.0);
 }
 
 void readEncoder1() {
