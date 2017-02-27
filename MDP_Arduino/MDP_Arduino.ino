@@ -46,26 +46,6 @@ void getCmd();
 /**
    Variable Declarations
 */
-
-int rpm1 = 0;
-int rpm2 = 0;
-unsigned long lastMilliPrint = 0;
-unsigned long lastTime = 0;
-
-int sensorFRValue = 0;
-int sensorFLValue = 0;
-double rawRead;
-int alignment_counter = 0;
-int auto_align = 1, sensor_feedback = 1, flag = 0;
-int counter;
-int motor1_encoder = 0, motor2_encoder = 0;
-
-int test = 0;
-
-double volatile FL_value;
-double volatile FR_value;
-
-// Serial Strings
 String instructionString = "";
 String feedbackString = "";
 bool stringReceived = false;
@@ -88,6 +68,10 @@ void setup()
 
   pinMode(irFR, INPUT);
   pinMode(irFL, INPUT);
+  pinMode(irFM, INPUT);
+  pinMode(irRM, INPUT);
+  pinMode(irLF, INPUT);
+  pinMode(irLM, INPUT);
 
   //  pull-up/down resistor
   digitalWrite(enA1, LOW);
@@ -123,11 +107,13 @@ void loop()
       left(90.0);
     else if (instructionString == "d")
       right (90.0);
+    else 
+      instructionString = "";
     Serial.print("Executed " + instructionString);
     instructionString = "";
     stringReceived = false;
   }
-  
+  Export_Sensors();
 }
 
 void forward(double distance) {

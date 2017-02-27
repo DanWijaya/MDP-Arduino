@@ -1,32 +1,112 @@
-#include <SharpIR.h>
+#include "SharpIR.h"
 
-#define ir A0
-#define model 20150
-// ir: the pin where your sensor is attached
-// model: an int that determines your sensor:  1080 for GP2Y0A21Y
-//                                            20150 for GP2Y0A02Y
-//                                            (working distance range according to the datasheets)
+#include "Arduino.h"
 
-SharpIR SharpIR(ir, 25, 93, model);
+#define LONG 20150
+#define SHORT 1080
 
-void setup() {
-  // put your setup code here, to run once:
+#define irFM A0
+#define irFL A1
+#define irFR A2
+#define irLF A3
+#define irLM A4
+#define irRM A5
+
+SharpIR sensorFR(irFR, 1, 93, SHORT);
+SharpIR sensorFL(irFL, 1, 93, SHORT);
+SharpIR sensorFM(irFM, 1, 93, SHORT);
+SharpIR sensorLM(irLM, 1, 93, SHORT);
+SharpIR sensorLF(irLF, 1, 93, SHORT);
+SharpIR sensorRM(irRM, 1, 93, LONG);
+
+void setup(){
   Serial.begin(9600);
-}
 
-void loop() {
-  delay(2000);   
+  pinMode(irFR, INPUT);
+  pinMode(irFL, INPUT);
+  pinMode(irFM, INPUT);
+  pinMode(irRM, INPUT);
+  pinMode(irLF, INPUT);
+  pinMode(irLM, INPUT);
 
-  unsigned long pepe1=millis();  // takes the time before the loop on the library begins
+  digitalWrite(irFR, LOW);
+  digitalWrite(irFL, LOW);
+  digitalWrite(irFM, LOW);
+  digitalWrite(irRM, LOW);
+  digitalWrite(irLM, LOW);
+  digitalWrite(irLF, LOW);
 
-  int dis=SharpIR.distance();  // this returns the distance to the object you're measuring
-
-
-  Serial.print("Mean distance: ");  // returns it to the serial monitor
-  Serial.println(dis);
   
-  unsigned long pepe2=millis()-pepe1;  // the following gives you the time taken to get the measurement
-  Serial.print("Time taken (ms): ");
-  Serial.println(pepe2);  
+}
+void loop(){
+  Export_Sensors();
+  delay (1000);
+}
+void Export_Sensors() {
+  String resultFR  = String("fr:") + String(final_MedianRead(irFR));
+  String resultFL  =  String("fl:") + String(final_MedianRead(irFL));
+  String resultFM  =  String("fm:") + String(final_MedianRead(irFM));
+  String resultLF = String("lf:") + String(final_MedianRead(irLF));
+  String resultLM = String("lm:") + String(final_MedianRead(irLM));
+  String resultRM = String("rm:") + String(final_MedianRead(irRM));
+  Serial.println(resultFR + resultFL + resultFM + resultLF + resultLM + resultRM); 
 
 }
+
+double final_MedianRead(int tpin) {
+  double x[21];
+
+  for (int i = 0; i < 21; i ++) {
+    x[i] = distanceFinder(tpin);
+  }
+  insertionsort(x, 21);
+  return x[10];
+}
+
+
+int distanceFinder(int pin)
+{
+  int dis = 0;
+  switch (pin)
+  {
+    case irFR:
+      dis = sensorFR.distance();
+      break;
+    case irFL:
+      dis = sensorFL.distance();
+      break;
+    case irFM:
+      dis = sensorFM.distance();
+      break;
+    case irLF:
+      dis = sensorLF.distance();
+      break;
+    case irLM:
+      dis = sensorLM.distance();
+      break;
+    case irRM:
+      dis = sensorRM.distance();
+      break;
+    default:
+      break;
+  }
+  return dis;
+}
+
+void insertionsort(double array[], int length)
+{
+  double temp;
+  for (int i = 1; i < length; i++) {
+    for (int j = i; j > 0; j--) {
+      if (array[j] < array[j - 1])
+      {
+        temp = array[j];
+        array[j] = array[j - 1];
+        array[j - 1] = temp;
+      }
+      else
+        break;
+    }
+  }
+}
+

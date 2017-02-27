@@ -1,90 +1,243 @@
+#include "Encoder.h"
 #include "DualVNH5019MotorShield.h"
+#include "PinChangeInt.h"
+#include "SharpIR.h"
+#include "PID_v1.h"
 
+#include <math.h>
+#include "Arduino.h"
+
+#define enA1    3
+#define enB1    5
+#define enA2    11
+#define enB2    13
+#define wheelRadius 3
+#define distanceBetweenWheels 17
+#define kp 100.0
+#define ki 0.0
+#define kd 0.0
+#define angular_kp 70.0
+#define angular_ki 65.0
+#define angular_kd 1.1
+
+/**
+   Function Declarations
+*/
+
+void forward(double);
+void backward(double);
+void left(double);
+void right(double);
+void readEncoder1();
+void readEncoder2();
+void getRpm();
+void getCmd();
+
+/**
+   Variable Declarations
+*/
+String instructionString = "";
+String feedbackString = "";
+bool stringReceived = false;
 
 DualVNH5019MotorShield md;
-
-int encoder0Pos = 0;
- int encoder0PinALast = LOW;
- int n = LOW;
- int encoder0PinA= 3;
- int encoder0PinB = 4;
- 
-void stopIfFault()
-{
-  if (md.getM1Fault())
-  {
-    Serial.println("M1 fault");
-    while(1);
-  }
-  if (md.getM2Fault())
-  {
-    Serial.println("M2 fault");
-    while(1);
-  }
-}
+Encoder en(enA1, enB1, enA2, enB2);
 
 void setup()
 {
-  pinMode (encoder0PinA,INPUT);
-   pinMode (encoder0PinB,INPUT);
-  Serial.begin(115200);
-  Serial.println("Dual VNH5019 Motor Shield");
+  Serial.begin(9600);
   md.init();
+  en.init();
+
+  //  pull-up/down resistor
+  digitalWrite(enA1, LOW);
+  digitalWrite(enA2, LOW);
+  digitalWrite(enB1, LOW);
+  digitalWrite(enB2, LOW);
+
+  //  Attach interrupts to encoder pins
+  attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
+  PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
+
+  //  emergency brake
+  //  PCintPort::attachInterrupt(A5, Export_Sensors, RISING);
+
+  // Serial data
+  instructionString.reserve(200);
 }
 
 void loop()
 {
-  n = digitalRead(encoder0PinA);
-   if ((encoder0PinALast == LOW) && (n == HIGH)) {
-     if (digitalRead(encoder0PinB) == LOW) {
-       encoder0Pos--;
-     } else {
-       encoder0Pos++;
-     }
-     Serial.print (encoder0Pos);
-     Serial.print ("/");
-   } 
-   encoder0PinALast = n;
-   
-  for (int i = 0; i <= 400; i++)
-  {
-    md.setM1Speed(i);
-    stopIfFault();
-    delay(2);
+  if (stringReceived)  {
+    if (instructionString == "w")
+      forward(10.0);
+    else if (instructionString == "s")
+      backward(10.0);
+    else if (instructionString == "a")
+      left(90.0);
+    else if (instructionString == "d")
+      right (90.0);
+    else 
+      instructionString = "";
+    Serial.print("Executed " + instructionString);
+    instructionString = "";
+    stringReceived = false;
   }
-  
-  for (int i = 400; i >= -400; i--)
-  {
-    md.setM1Speed(i);
-    stopIfFault();
-    delay(2);
-  }
-  
-  for (int i = -400; i <= 0; i++)
-  {
-    md.setM1Speed(i);
-    stopIfFault();
-    delay(2);
-  }
+}
 
-  for (int i = 0; i <= 400; i++)
-  {
-    md.setM2Speed(i);
-    stopIfFault();
-    delay(2);
+void forward(double distance) {
+  double distanceL, distanceR, distanceTraversed, angular_error, v, w, setPoint;
+  distanceTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  angular_error = 0;
+  setPoint = 0;
+  v = 75;
+  w = 0;
+
+  PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID_angular.SetMode(AUTOMATIC);
+
+  while ( fabs(distance - distanceTraversed) > 1) {
+    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+
+    distanceTraversed = (distanceL + distanceR) / 2;
+
+    angular_error = distanceL - distanceR;
+    PID_angular.Compute();
+    if (fabs(distance - distanceTraversed) < 70 && v > 130) {
+      v = v - 0.4;
+    }
+    else if (v < 350) {
+      v = v + 1;
+    }
+
+    md.setSpeeds(-v - w, v - w);
+
   }
-  
-  for (int i = 400; i >= -400; i--)
-  {
-    md.setM2Speed(i);
-    stopIfFault();
-    delay(2);
+  md.setSpeeds(0, 0);
+  Serial.println("Forward:10");
+}
+
+void backward(double distance) {
+  double distanceL, distanceR, distanceTraversed, angular_error, v, w, setPoint;
+  distanceTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  angular_error = 0;
+  setPoint = 0;
+  v = 75;
+  w = 0;
+
+  PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID_angular.SetMode(AUTOMATIC);
+
+  while ( fabs(distance - distanceTraversed) > 1) {
+    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+
+    distanceTraversed = -(distanceL + distanceR) / 2;
+
+    angular_error = distanceL - distanceR;
+    PID_angular.Compute();
+    if (fabs(distance - distanceTraversed) < 70 && v > 130) {
+      v = v - 0.4;
+    }
+    else if (v < 350) {
+      v = v + 1;
+    }
+    md.setSpeeds(v - w, -v - w);
+
   }
-  
-  for (int i = -400; i <= 0; i++)
-  {
-    md.setM2Speed(i);
-    stopIfFault();
-    delay(2);
+  md.setSpeeds(0, 0);
+  Serial.println("Backward:10");
+}
+
+void left(double angle) {
+  double distanceL, distanceR, angleTraversed, angular_error, v, w, setPoint;
+  angleTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  setPoint = 0;
+  angular_error = 0;
+  v = 80;
+  w = 0;
+
+  PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID_angular.SetMode(AUTOMATIC);
+
+  while ( fabs(angle - fabs(angleTraversed)) > 0.8 ) {
+    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+
+    angleTraversed = (distanceR - distanceL) / distanceBetweenWheels;
+    angleTraversed = (angleTraversed * 4068) / 71;
+
+    angular_error = distanceL + distanceR;
+
+    PID_angular.Compute();
+    if (fabs(angle - fabs(angleTraversed)) < 80.0 && v > 100) {
+      v = v - 0.4;
+    }
+    else if (v < 250) {
+      v = v + 0.4;
+    }
+    md.setSpeeds(v - w, v + w);
+  }
+  md.setSpeeds(0, 0);
+  Serial.println("Left:90");
+}
+
+void right(double angle) {
+  double distanceL, distanceR, angleTraversed, angular_error, v, w, setPoint;
+  angleTraversed = 0;
+  distanceL = 0;
+  distanceR = 0;
+  setPoint = 0;
+  angular_error = 0;
+  v = 60;
+  w = 0;
+
+  PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID_angular.SetMode(AUTOMATIC);
+
+  while ( fabs(angle - fabs(angleTraversed)) > 0.9 ) {
+    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+
+    angleTraversed = (distanceR - distanceL) / distanceBetweenWheels;
+    angleTraversed = (angleTraversed * 4068) / 71;
+
+    angular_error = distanceL + distanceR;
+
+    PID_angular.Compute();
+    if (fabs(angle - fabs(angleTraversed)) < 45.0 && v > 100) {
+      v = v - 0.4;
+    }
+    else if (v < 250) {
+      v = v + 0.4;
+    }
+    md.setSpeeds(-v - w, w - v);
+  }
+  md.setSpeeds(0, 0);
+  Serial.println("Right:90");
+}
+
+void readEncoder1() {
+  en.rencoder1();
+}
+
+void readEncoder2() {
+  en.rencoder2();
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    instructionString += inChar;
+    if (inChar == '\n') {
+      stringReceived = true;
+    }
   }
 }
