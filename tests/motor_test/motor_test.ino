@@ -116,7 +116,7 @@ void forward(double distance) {
     md.setSpeeds(-v - w, v - w);
 
   }
-  md.setSpeeds(0, 0);
+  md.setBrakes(400, 400);
   Serial.println("Forward:10");
 }
 
@@ -150,7 +150,7 @@ void backward(double distance) {
     md.setSpeeds(v - w, -v - w);
 
   }
-  md.setSpeeds(0, 0);
+  md.setBrakes(400, 400);
   Serial.println("Backward:10");
 }
 
@@ -185,7 +185,7 @@ void left(double angle) {
     }
     md.setSpeeds(v - w, v + w);
   }
-  md.setSpeeds(0, 0);
+  md.setBrakes(400, 400);
   Serial.println("Left:90");
 }
 
@@ -220,7 +220,7 @@ void right(double angle) {
     }
     md.setSpeeds(-v - w, w - v);
   }
-  md.setSpeeds(0, 0);
+  md.setBrakes(400, 400);
   Serial.println("Right:90");
 }
 
