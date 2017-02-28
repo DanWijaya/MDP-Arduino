@@ -98,22 +98,25 @@ void setup()
 
 void loop()
 {
-  if (stringReceived)  {
-    if (instructionString == "w")
-      forward(10.0);
-    else if (instructionString == "s")
-      backward(10.0);
-    else if (instructionString == "a")
-      left(90.0);
-    else if (instructionString == "d")
-      right (90.0);
-    else 
-      instructionString = "";
-    Serial.print("Executed " + instructionString);
-    instructionString = "";
-    stringReceived = false;
-  }
-  Export_Sensors();
+//  if (stringReceived)  {
+//    if (instructionString == "w")
+//      forward(10.0);
+//    else if (instructionString == "s")
+//      backward(10.0);
+//    else if (instructionString == "a")
+//      left(90.0);
+//    else if (instructionString == "d")
+//      right (90.0);
+//    else 
+//      instructionString = "";
+//    Serial.print("Executed " + instructionString);
+//    instructionString = "";
+//    stringReceived = false;
+//  }
+//  Export_Sensors();
+delay(200);
+forward(200);
+while(1){}
 }
 
 void forward(double distance) {
@@ -123,7 +126,7 @@ void forward(double distance) {
   distanceR = 0;
   angular_error = 0;
   setPoint = 0;
-  v = 75;
+  v = 300;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
