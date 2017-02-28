@@ -105,6 +105,13 @@ void forward(double distance) {
     distanceTraversed = (distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
+    Serial.print("   Forward error: ");
+    Serial.print(angular_error);
+    Serial.print(" ");
+    Serial.print("   Distance left: ");
+    Serial.println(fabs(distance - distanceTraversed) / 100);
+
+    angular_error = distanceL - distanceR;
     PID_angular.Compute();
     if (fabs(distance - distanceTraversed) < 70 && v > 130) {
       v = v - 0.4;
@@ -140,6 +147,13 @@ void backward(double distance) {
     distanceTraversed = -(distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
+
+    Serial.print("   Back error: ");
+    Serial.print(angular_error);
+    Serial.print(" ");
+    Serial.print("   Distance left: ");
+    Serial.print(fabs(distance - distanceTraversed) / 100);
+  
     PID_angular.Compute();
     if (fabs(distance - distanceTraversed) < 70 && v > 130) {
       v = v - 0.4;
@@ -148,7 +162,9 @@ void backward(double distance) {
       v = v + 1;
     }
     md.setSpeeds(v - w, -v - w);
-
+     Serial.print(" ");
+    Serial.print("   v: ");
+    Serial.println(v / 100);
   }
   md.setBrakes(400, 400);
   Serial.println("Backward:10");
@@ -175,7 +191,15 @@ void left(double angle) {
     angleTraversed = (angleTraversed * 4068) / 71;
 
     angular_error = distanceL + distanceR;
-
+//    Serial.print("   L: ");
+    //    Serial.print(distanceL);
+    //    Serial.print("   R: ");
+    //    Serial.print(distanceR);
+    Serial.print("   angle left: ");
+    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
+    Serial.print(" ");
+    Serial.print("   Left error: ");
+Serial.print(angular_error);
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 80.0 && v > 100) {
       v = v - 0.4;
@@ -183,6 +207,13 @@ void left(double angle) {
     else if (v < 250) {
       v = v + 0.4;
     }
+
+   Serial.print(" ");
+    Serial.print("   v: ");
+    Serial.println(v / 125);
+    //    Serial.print("   w: ");
+//    Serial.println(w);
+  
     md.setSpeeds(v - w, v + w);
   }
   md.setBrakes(400, 400);
@@ -210,7 +241,15 @@ void right(double angle) {
     angleTraversed = (angleTraversed * 4068) / 71;
 
     angular_error = distanceL + distanceR;
-
+//    Serial.print("   L: ");
+    //    Serial.print(distanceL);
+    //    Serial.print("   R: ");
+//    Serial.print(distanceR);
+ Serial.print("   angle left: ");
+    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
+    Serial.print(" ");
+    Serial.print("   Left error: ");
+Serial.print(angular_error);
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 45.0 && v > 100) {
       v = v - 0.4;
@@ -218,6 +257,11 @@ void right(double angle) {
     else if (v < 250) {
       v = v + 0.4;
     }
+    Serial.print(" ");
+    Serial.print("   v: ");
+    Serial.println(v / 125);
+    //    Serial.print("   w: ");
+//    Serial.println(w);
     md.setSpeeds(-v - w, w - v);
   }
   md.setBrakes(400, 400);
