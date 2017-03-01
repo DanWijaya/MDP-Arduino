@@ -19,8 +19,8 @@ SharpIR sensorLM(irLM, 1, 93, SHORT);
 SharpIR sensorLF(irLF, 1, 93, SHORT);
 SharpIR sensorRM(irRM, 1, 93, LONG);
 
-void setup(){
-  Serial.begin(9600);
+void setup() {
+  Serial.begin(115200);
 
   pinMode(irFR, INPUT);
   pinMode(irFL, INPUT);
@@ -36,20 +36,20 @@ void setup(){
   digitalWrite(irLM, LOW);
   digitalWrite(irLF, LOW);
 
-  
+
 }
-void loop(){
+void loop() {
   Export_Sensors();
   delay (1000);
 }
 void Export_Sensors() {
-  String resultFR  = String("fr:") + String(final_MedianRead(irFR));
-  String resultFL  =  String("fl:") + String(final_MedianRead(irFL));
-  String resultFM  =  String("fm:") + String(final_MedianRead(irFM));
-  String resultLF = String("lf:") + String(final_MedianRead(irLF));
-  String resultLM = String("lm:") + String(final_MedianRead(irLM));
-  String resultRM = String("rm:") + String(final_MedianRead(irRM));
-  Serial.println(resultFR + resultFL + resultFM + resultLF + resultLM + resultRM); 
+  String resultFR = String("fr: ") + String(final_MedianRead(irFR));
+  String resultFL = String("  fl: ") + String(final_MedianRead(irFL));
+  String resultFM = String("  fm: ") + String(final_MedianRead(irFM));
+  String resultLF = String("  lf: ") + String(final_MedianRead(irLF));
+  String resultLM = String("  lm: ") + String(final_MedianRead(irLM));
+  String resultRM = String("  rm: ") + String(final_MedianRead(irRM));
+  Serial.println(resultFR + resultFL + resultFM + resultLF + resultLM + resultRM);
 
 }
 

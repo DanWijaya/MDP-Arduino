@@ -17,8 +17,8 @@
 #define ki 0.0
 #define kd 0.0
 #define angular_kp 70.0
-#define angular_ki 65.0
-#define angular_kd 1.1
+#define angular_ki 60.0
+#define angular_kd 1.0
 
 #define LONG 20150
 #define SHORT 1080
@@ -30,6 +30,8 @@
 #define irLM A4
 #define irRM A5
 
+
+const float Pi = 3.14159;
 /**
    Function Declarations
 */
@@ -62,7 +64,7 @@ SharpIR sensorRM(irRM, 1, 93, LONG);
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   md.init();
   en.init();
 
@@ -98,25 +100,26 @@ void setup()
 
 void loop()
 {
-//  if (stringReceived)  {
-//    if (instructionString == "w")
-//      forward(10.0);
-//    else if (instructionString == "s")
-//      backward(10.0);
-//    else if (instructionString == "a")
-//      left(90.0);
-//    else if (instructionString == "d")
-//      right (90.0);
-//    else 
-//      instructionString = "";
-//    Serial.print("Executed " + instructionString);
-//    instructionString = "";
-//    stringReceived = false;
-//  }
-//  Export_Sensors();
-delay(200);
-forward(200);
-while(1){}
+  //  if (stringReceived)  {
+  //    if (instructionString == "w")
+  //      forward(10.0);
+  //    else if (instructionString == "s")
+  //      backward(10.0);
+  //    else if (instructionString == "a")
+  //      left(90.0);
+  //    else if (instructionString == "d")
+  //      right (90.0);
+  //    else
+  //      instructionString = "";
+  //    Serial.print("Executed " + instructionString);
+  //    instructionString = "";
+  //    stringReceived = false;
+  //  }
+  //  Export_Sensors();
+  delay(200);
+//  forward(200);
+backward(100.0);
+  while (1) {}
 }
 
 void forward(double distance) {
@@ -126,32 +129,44 @@ void forward(double distance) {
   distanceR = 0;
   angular_error = 0;
   setPoint = 0;
-  v = 300;
+  v = 110;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
 
-  while ( fabs(distance - distanceTraversed) > 1) {
-    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
-    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+  while ( distance - distanceTraversed > 0.5) {
+    distanceL += 2 * Pi * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * Pi * wheelRadius * en.getMotor2Revs();
 
+    //    Serial.print("   DistanceL: ");
+    //    Serial.print(distanceL/100);
+    //    Serial.print(" ");
+    //    Serial.print("   DistanceR: ");
+    //    Serial.print(distanceR/100);
+    //    Serial.print(" ");
     distanceTraversed = (distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
+    Serial.print("   Forward error: ");
+    Serial.println(angular_error);
+    //Serial.print(" ");
+    //Serial.print("   Distance left: ");
+    //Serial.println(distanceTraversed);
+
     PID_angular.Compute();
-    if (fabs(distance - distanceTraversed) < 70 && v > 130) {
-      v = v - 0.4;
+    if (fabs(distance - distanceTraversed) < distance / 2 && v > 180) {
+      v = v - 0.001 * v;
     }
     else if (v < 350) {
-      v = v + 1;
+      v = v + 0.001 * v;
     }
+    w = w - 0.001 * w;
 
-    md.setSpeeds(-v - w, v - w);
+    md.setSpeeds((-v - w) * 11 / 12, v - w);
 
   }
-  md.setSpeeds(0, 0);
-  Serial.println("Forward:10");
+  md.setBrakes(400, 400);
 }
 
 void backward(double distance) {
@@ -161,31 +176,35 @@ void backward(double distance) {
   distanceR = 0;
   angular_error = 0;
   setPoint = 0;
-  v = 75;
+  v = 110;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
 
   while ( fabs(distance - distanceTraversed) > 1) {
-    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
-    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+    distanceL += 2 * Pi * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * Pi * wheelRadius * en.getMotor2Revs();
 
     distanceTraversed = -(distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
+    Serial.print("   Backward error: ");
+    Serial.println(angular_error);
+
     PID_angular.Compute();
-    if (fabs(distance - distanceTraversed) < 70 && v > 130) {
-      v = v - 0.4;
+    if (fabs(distance - distanceTraversed) < distance / 2 && v > 180) {
+      v = v - 0.001 * v;
     }
     else if (v < 350) {
-      v = v + 1;
+      v = v + 0.001 * v;
     }
-    md.setSpeeds(v - w, -v - w);
+    w = w - 0.001 * w;
+
+    md.setSpeeds((v - w) * 11 / 12, -v - w);
 
   }
-  md.setSpeeds(0, 0);
-  Serial.println("Backward:10");
+  md.setBrakes(400, 400);
 }
 
 void left(double angle) {
@@ -202,14 +221,23 @@ void left(double angle) {
   PID_angular.SetMode(AUTOMATIC);
 
   while ( fabs(angle - fabs(angleTraversed)) > 0.8 ) {
-    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
-    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+    distanceL += 2 * Pi * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * Pi * wheelRadius * en.getMotor2Revs();
 
     angleTraversed = (distanceR - distanceL) / distanceBetweenWheels;
     angleTraversed = (angleTraversed * 4068) / 71;
 
     angular_error = distanceL + distanceR;
 
+    //    Serial.print("   L: ");
+    //    Serial.print(distanceL);
+    //    Serial.print("   R: ");
+    //    Serial.print(distanceR);
+    Serial.print("   angle left: ");
+    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
+    Serial.print(" ");
+    Serial.print("   Left error: ");
+    Serial.print(angular_error);
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 80.0 && v > 100) {
       v = v - 0.4;
@@ -217,10 +245,17 @@ void left(double angle) {
     else if (v < 250) {
       v = v + 0.4;
     }
+
+    Serial.print(" ");
+    Serial.print("   v: ");
+    Serial.println(v / 125);
+    //    Serial.print("   w: ");
+    //    Serial.println(w);
+
     md.setSpeeds(v - w, v + w);
   }
-  md.setSpeeds(0, 0);
-  Serial.println("Left:90");
+
+  md.setBrakes(400, 400);
 }
 
 void right(double angle) {
@@ -230,32 +265,48 @@ void right(double angle) {
   distanceR = 0;
   setPoint = 0;
   angular_error = 0;
-  v = 60;
+  v = 80;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
 
   while ( fabs(angle - fabs(angleTraversed)) > 0.9 ) {
-    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
-    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+    distanceL += 2 * Pi * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * Pi * wheelRadius * en.getMotor2Revs();
 
     angleTraversed = (distanceR - distanceL) / distanceBetweenWheels;
     angleTraversed = (angleTraversed * 4068) / 71;
 
     angular_error = distanceL + distanceR;
 
+    //    Serial.print("   L: ");
+    //    Serial.print(distanceL);
+    //    Serial.print("   R: ");
+    //    Serial.print(distanceR);
+    Serial.print("   angle left: ");
+    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
+    Serial.print(" ");
+    Serial.print("   Left error: ");
+    Serial.print(angular_error);
     PID_angular.Compute();
-    if (fabs(angle - fabs(angleTraversed)) < 45.0 && v > 100) {
+    if (fabs(angle - fabs(angleTraversed)) < 80.0 && v > 100) {
       v = v - 0.4;
     }
     else if (v < 250) {
       v = v + 0.4;
     }
-    md.setSpeeds(-v - w, w - v);
+
+    Serial.print(" ");
+    Serial.print("   v: ");
+    Serial.println(v / 125);
+    //    Serial.print("   w: ");
+    //    Serial.println(w);
+
+    md.setSpeeds(-v - w, v - w);
   }
-  md.setSpeeds(0, 0);
-  Serial.println("Right:90");
+  
+  md.setBrakes(400, 400);
 }
 
 void readEncoder1() {
@@ -273,7 +324,7 @@ void Export_Sensors() {
   String resultLF = String("lf:") + String(final_MedianRead(irLF));
   String resultLM = String("lm:") + String(final_MedianRead(irLM));
   String resultRM = String("rm:") + String(final_MedianRead(irRM));
-  Serial.println(resultFR + resultFL + resultFM + resultLF + resultLM + resultRM); 
+  Serial.println(resultFR + resultFL + resultFM + resultLF + resultLM + resultRM);
 
 }
 
