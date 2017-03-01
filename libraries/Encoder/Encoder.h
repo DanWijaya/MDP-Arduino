@@ -15,13 +15,13 @@ class Encoder
 		
 	public:
 		//constructor
-		Encoder(unsigned char pinA, unsigned char pinB, unsigned char pinC, unsigned char pinD);
+		Encoder(unsigned char, unsigned char, unsigned char, unsigned char);
 	
 		void init();
 		void rencoder1();
 		void rencoder2();
-		double getMotor1RPM();
-		double getMotor2RPM();
+		double getMotor1RPM(unsigned long);
+		double getMotor2RPM(unsigned long);
 		double getMotor1Revs();
 		double getMotor2Revs();
 		int getCount1();

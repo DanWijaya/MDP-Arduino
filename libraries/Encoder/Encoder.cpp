@@ -3,6 +3,8 @@
 
 static int countAnt1 = 0;
 static int countAnt2 = 0;
+static unsigned long lastTime1 = 0;
+static unsigned long lastTime2 = 0;
 
 Encoder::Encoder(unsigned char pinA, unsigned char pinB, unsigned char pinC, unsigned char pinD){
 	pinA1 = pinA;
@@ -20,26 +22,28 @@ void Encoder::init(){
 	count2 = 0;
 }
 
-double Encoder::getMotor1RPM(){
-	int speed = (count1 - countAnt1) * (140.0 / 195.0);
-	countAnt1 = count1;
+double Encoder::getMotor1RPM(unsigned long time1){
+//	int speed = (count1 - countAnt1) / (time1 - lastTime1);4
+	double speed = getMotor1Revs() / ((time1 - lastTime1) / 60000.0);
+	lastTime1 = time1;
 	return speed;
 }
 
-double Encoder::getMotor2RPM(){
-	int speed = -(count2 - countAnt2) * (146.0 / 197.0);
-	countAnt2 = count2;
+double Encoder::getMotor2RPM(unsigned long time2){
+	double speed = getMotor2Revs() / ((time2 - lastTime2) / 60000.0);
+	lastTime2 = time2;
 	return speed;
 }
 
 double Encoder::getMotor1Revs(){
-	int res = count1 - countAnt1;
+	int res = countAnt1 - count1;
 	countAnt1 = count1;
 	return res/562.215;
 }
 
 double Encoder::getMotor2Revs(){
-	int res = -(count2 - countAnt2);
+	int res = count2 - countAnt2
+	;
 	countAnt2 = count2;
 	return res/562.215;
 }
