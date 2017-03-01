@@ -65,13 +65,13 @@ void setup()
 void loop()
 {
     if (stringReceived)  {
-      if (instructionString == "w")
+      if (instructionString[0] == 'w')
         forward(10.0);
-      else if (instructionString == "s")
+      else if (instructionString[0] == 's')
         backward(10.0);
-      else if (instructionString == "a")
+      else if (instructionString[0] == 'a')
         left(90.0);
-      else if (instructionString == "d")
+      else if (instructionString[0] == 'd')
         right (90.0);
       else
         instructionString = "";
@@ -113,8 +113,8 @@ void forward(double distance) {
     distanceTraversed = (distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
-    Serial.print("   Forward error: ");
-    Serial.println(angular_error);
+//    Serial.print("   Forward error: ");
+//    Serial.println(angular_error);
     //Serial.print(" ");
     //Serial.print("   Distance left: ");
     //Serial.println(distanceTraversed);
@@ -158,8 +158,8 @@ void backward(double distance) {
     //    Serial.print("   Back error: ");
     //    Serial.print(angular_error);
     //    Serial.print(" ");
-    Serial.print("   Distance left: ");
-    Serial.print(fabs(distance - distanceTraversed) / 100);
+//    Serial.print("   Distance left: ");
+//    Serial.print(fabs(distance - distanceTraversed) / 100);
 
     PID_angular.Compute();
     if (fabs(distance - distanceTraversed) < 70 && v > 130) {
@@ -204,8 +204,8 @@ void left(double angle) {
     //    Serial.print("   angle left: ");
     //    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
     //    Serial.print(" ");
-    Serial.print("   Left error: ");
-    Serial.println(angular_error);
+//    Serial.print("   Left error: ");
+//    Serial.println(angular_error);
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 40.0 && v > 110) {
       v = v - 0.4;
@@ -253,8 +253,8 @@ void right(double angle) {
     //    Serial.print("   angle left: ");
     //    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
     //    Serial.print(" ");
-    Serial.print("   right error: ");
-    Serial.println(angular_error);
+//    Serial.print("   right error: ");
+//    Serial.println(angular_error);
 
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 40.0 && v > 110) {

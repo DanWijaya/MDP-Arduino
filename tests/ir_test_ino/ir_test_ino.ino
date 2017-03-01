@@ -43,7 +43,7 @@ void loop() {
   delay (1000);
 }
 void Export_Sensors() {
-  String resultFR = String("fr: ") + String(final_MedianRead(irFR));
+  String resultFR = String("  fr: ") + String(final_MedianRead(irFR));
   String resultFL = String("  fl: ") + String(final_MedianRead(irFL));
   String resultFM = String("  fm: ") + String(final_MedianRead(irFM));
   String resultLF = String("  lf: ") + String(final_MedianRead(irLF));
