@@ -47,6 +47,7 @@ void getCmd();
 String instructionString = "";
 String feedbackString = "";
 bool stringReceived = false;
+double d;
 
 DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
@@ -87,6 +88,8 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
   PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
 
+  PWM_Mode_Setup();
+
   //  emergency brake
   //  PCintPort::attachInterrupt(A5, Export_Sensors, RISING);
 
@@ -111,20 +114,24 @@ void loop()
   //    instructionString = "";
   //    stringReceived = false;
   //  }
-   Export_Sensors();
+  // Export_Sensors();
+ wall_alignment();
+ // d=Ultra_Sensor();
+  //Serial.print(d);
+  //Serial.print("  ");
   delay(200);
   //forward(100.0);
   //curved(40.0);
  // forward(30.0);
   // md.setSpeeds(400, 400);
   //  backward(100.0);
-  while (1) {}
+  //while (1) {}
 }
 
 
 void wall_alignment()
 {
-  double fl, fm, fr, lm, l_m_distance, m_r_distance, l_r_distance, y1, y2, x;
+  double fl, fm, fr, lm, l_m_distance = 6, m_r_distance = 4, l_r_distance = 10, y1, y2, x;
   boolean aligned = false, turn_right=false, turn_left=false;
   int count = 0;
 
@@ -134,12 +141,19 @@ void wall_alignment()
     fl = final_MedianRead(irFL);
     fm = final_MedianRead(irFM);
     fr = final_MedianRead(irFR);
+    Serial.print(fl);
+    Serial.print("  ");
+    Serial.print(fm);
+    Serial.print("  ");
+    Serial.print(fr);
+    Serial.print("  ");
 
-    if (fl==fr || fl==fm || fm==fr)
+    if (fl-fr<=fabs(2) || fl-fm<=fabs(1) || fm-fr<=fabs(1))
      aligned =true;
       
-    if (aligned != false )
+    if (aligned != true )
     {
+      Serial.print("inside if ");
       if (fl > fr)
       {
         y2 = fl - fr;
@@ -155,7 +169,11 @@ void wall_alignment()
         turn_left = true;
       }
       
-      double angle_error = (atan2(y2, l_r_distance) + atan2(y1, x)) / 2;
+      double angle_error = min(atan2(y2, l_r_distance), atan2(y1, x));
+      angle_error = angle_error*360*7/22;
+      Serial.print("angle error ");
+      Serial.print(turn_right);
+      Serial.print("  ");
 
       if (turn_right)
       {
@@ -499,6 +517,10 @@ void Export_Sensors() {
 double final_MedianRead(int tpin) {
   double x[21];
 
+
+ if (tpin == irFM)
+    return Ultra_Sensor();
+    
   for (int i = 0; i < 21; i ++) {
     x[i] = distanceFinder(tpin);
   }
@@ -631,6 +653,7 @@ double Ultra_Sensor()
   if (DistanceMeasured >= 10200)
   { // the reading is invalid.
     //Serial.println("Invalid");
+    Distance=-1;
   }
   else
   {
