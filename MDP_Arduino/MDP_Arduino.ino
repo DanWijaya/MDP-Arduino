@@ -1,5 +1,3 @@
-//#include <ultasonic.h>
-
 #include "Encoder.h"
 #include "DualVNH5019MotorShield.h"
 #include "PinChangeInt.h"
@@ -13,11 +11,24 @@
 #define enB1    5
 #define enA2    11
 #define enB2    13
-#define wheelRadius 3
+#define wheelRadius 3.07
 #define distanceBetweenWheels 17
-#define angular_kp 70.0
+
+/*
+   PID Values
+*/
+#define angular_kp 65.0
 #define angular_ki 60.0
 #define angular_kd 1.0
+
+#define turn_kp 52.0
+#define turn_ki 50.0
+#define turn_kd 1.0
+
+
+/*
+   Sensor Settings
+*/
 
 #define LONG 20150
 #define SHORT 1080
@@ -41,23 +52,26 @@ void readEncoder1();
 void readEncoder2();
 void getCmd();
 
+float const pi = 3.14159;
 /**
    Variable Declarations
 */
 String instructionString = "";
 String feedbackString = "";
+String stringValueReceived = "";
+int intValueReceived = 0;
 bool stringReceived = false;
 double d;
 
 DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
 
-SharpIR sensorFR(irFR, 1, 93, SHORT);  // (pin , no.reading b4 calculate mean dist, diff btw 2 consecutive measu taken as valid)
-SharpIR sensorFL(irFL, 1, 93, SHORT);
-//SharpIR sensorFM(irFM, 1, 93, SHORT);
-SharpIR sensorLM(irLM, 1, 93, SHORT);
-SharpIR sensorLF(irLF, 1, 93, SHORT);
-SharpIR sensorRM(irRM, 1, 93, LONG);
+SharpIR sensorFR(irFR, 10, 10, SHORT);  // (pin , no.reading b4 calculate mean dist, diff btw 2 consecutive measu taken as valid)
+SharpIR sensorFL(irFL, 10, 10, SHORT);
+SharpIR sensorLM(irLM, 10, 10, SHORT);
+SharpIR sensorLF(irLF, 10, 10, SHORT);
+SharpIR sensorRM(irRM, 10, 10, LONG);
+
 
 void setup()
 {
@@ -77,12 +91,15 @@ void setup()
   digitalWrite(enA2, LOW);
   digitalWrite(enB1, LOW);
   digitalWrite(enB2, LOW);
+
   digitalWrite(irFR, LOW);
   digitalWrite(irFL, LOW);
- // digitalWrite(irFM, LOW);
+  // digitalWrite(irFM, LOW);
   digitalWrite(irRM, LOW);
   digitalWrite(irLM, LOW);
   digitalWrite(irLF, LOW);
+
+  Serial.flush();
 
   //  Attach interrupts to encoder pins
   attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
@@ -99,13 +116,42 @@ void setup()
 
 void loop()
 {
-  //  if (stringReceived)  {
-  //    if (instructionString == "w")
-  //      forward(10.0);
-  //    else if (instructionString == "s")
-  //      backward(10.0);
-  //    else if (instructionString == "a")
+//  if (stringReceived)  {
+//    if (instructionString[0] == 'm') {
+//      if (instructionString[1] == 'w') {
+//        forward(intValueReceived);
+//        sendInfo(instructionString[1]);
+//      }
+//      else if (instructionString[1] == 's') {
+//        backward(intValueReceived);
+//        sendInfo(instructionString[1]);
+//      }
+//      else if (instructionString[1] == 'a') {
+//        left(90.0);
+//        sendInfo(instructionString[1]);
+//      }
+//      else if (instructionString[1] == 'd') {
+//        right (90.0);
+//        sendInfo(instructionString[1]);
+//      }
+//      else
+//        instructionString = "";
+//
+//    }
+//    else if (instructionString.equals(String("start\n"))) {
+//      sendInfo('e');
+//    }
+//    instructionString = "";
+//    stringValueReceived = "";
+//    stringReceived = false;
+//  }
+  //  delay(200);
+  //      Serial.println(analogRead(A4));
+  //    Serial.println(sensorFR.distance());
+  //     avoidObs();
+  //    Export_Sensors();
   //      left(90.0);
+
   //    else if (instructionString == "d")
   //      right (90.0);
   //    else
@@ -114,33 +160,48 @@ void loop()
   //    instructionString = "";
   //    stringReceived = false;
   //  }
-  // Export_Sensors();
- wall_alignment();
- // d=Ultra_Sensor();
+  // wall_alignment();
+  // d=Ultra_Sensor();
   //Serial.print(d);
   //Serial.print("  ");
-  delay(200);
-  //forward(100.0);
+  //  delay(200);
+
+    delay(100);
+
+  forward(10.0);
   //curved(40.0);
- // forward(30.0);
+  // forward(30.0);
   // md.setSpeeds(400, 400);
   //  backward(100.0);
+
   //while (1) {}
+
+  //  while (1) {}
+
+  //  right(90.0);
+  //      forward(50.0);
+  //    backward(100.0);
+//    while (1) {}
+
+
 }
 
 
 void wall_alignment()
 {
+
   double fl, fm, fr, lm, l_m_distance = 6, m_r_distance = 4, l_r_distance = 10, y1, y2, x;
-  boolean aligned = false, turn_right=false, turn_left=false;
+  boolean aligned = false, turn_right = false, turn_left = false;
+
   int count = 0;
 
   while (count < 3 && aligned == false)
   {
-    
+
     fl = final_MedianRead(irFL);
     fm = final_MedianRead(irFM);
     fr = final_MedianRead(irFR);
+
     Serial.print(fl);
     Serial.print("  ");
     Serial.print(fm);
@@ -148,10 +209,17 @@ void wall_alignment()
     Serial.print(fr);
     Serial.print("  ");
 
-    if (fl-fr<=fabs(2) || fl-fm<=fabs(1) || fm-fr<=fabs(1))
-     aligned =true;
-      
+    if (fl - fr <= fabs(2) || fl - fm <= fabs(1) || fm - fr <= fabs(1))
+      aligned = true;
+
     if (aligned != true )
+
+
+      if (fl == fr || fl == fm || fm == fr)
+        aligned = true;
+
+    if (aligned != false )
+
     {
       Serial.print("inside if ");
       if (fl > fr)
@@ -168,12 +236,14 @@ void wall_alignment()
         x = l_m_distance;
         turn_left = true;
       }
-      
+
+
       double angle_error = min(atan2(y2, l_r_distance), atan2(y1, x));
-      angle_error = angle_error*360*7/22;
+      angle_error = angle_error * 360 * 7 / 22;
       Serial.print("angle error ");
       Serial.print(turn_right);
       Serial.print("  ");
+
 
       if (turn_right)
       {
@@ -187,56 +257,67 @@ void wall_alignment()
       }
       count++;
     }
-
-   
   }
 }
 
 
 void forward(double distance) {
-  double distanceL, distanceR, distanceTraversed, angular_error, v, w, setPoint;
+  double  distanceTraversed, angular_error, v, w, setPoint;
+  float distanceL, distanceR;
   distanceTraversed = 0;
   distanceL = 0;
   distanceR = 0;
   angular_error = 0;
   setPoint = 0;
-  v = 110;
+  v = 180;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
+
+  //Flush the motor revs value;
+  en.getMotor1Revs();
+  en.getMotor2Revs();
 
   while ( distance - distanceTraversed > 0.5) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
     //    Serial.print("   DistanceL: ");
-    //    Serial.print(distanceL/100);
+    //    Serial.print(distanceL);
     //    Serial.print(" ");
     //    Serial.print("   DistanceR: ");
-    //    Serial.print(distanceR/100);
+    //    Serial.print(distanceR);
     //    Serial.print(" ");
     distanceTraversed = (distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
-    //Serial.print("   Forward error: ");
-    //Serial.println(angular_error);
+        Serial.print("   Forward error: ");
+        Serial.println(distanceL - distanceR);
     //Serial.print(" ");
     //Serial.print("   Distance left: ");
     //Serial.println(distanceTraversed);
 
     PID_angular.Compute();
-    if (fabs(distance - distanceTraversed) < distance / 2 && v > 180) {
-      v = v - 0.001 * v;
+
+    if (fabs(distance - distanceTraversed) < distance / 2 && v > 200) {
+      v -= 0.05;
     }
     else if (v < 350) {
-      v = v + 0.001 * v;
+      v = 1.001 * v;
     }
-    w = w - 0.001 * w;
 
-    md.setSpeeds((-v - w) * 11 / 12, v - w);
+    //    Serial.print(" ");
+    //    Serial.print("   v: ");
+    //    Serial.print(v / 100);
+    //    Serial.print(" ");
+    //    Serial.print("   w: ");
+    //    Serial.println(w / 10);
+
+    md.setSpeeds((-v - w) * 90 / 96, v - w);
 
   }
+
   md.setBrakes(400, 400);
 }
 
@@ -247,39 +328,51 @@ void backward(double distance) {
   distanceR = 0;
   angular_error = 0;
   setPoint = 0;
-  v = 110;
+  v = 180;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
 
+  //Flush the motor revs value;
+  en.getMotor1Revs();
+  en.getMotor2Revs();
+
   while ( fabs(distance - distanceTraversed) > 0.5) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
-
+    //    Serial.print("   DistanceL: ");
+    //    Serial.print(distanceL);
+    //    Serial.print(" ");
+    //    Serial.print("   DistanceR: ");
+    //    Serial.print(distanceR);
+    //    Serial.print(" ");
     distanceTraversed = -(distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
-
+    //
     //    Serial.print("   Back error: ");
-    //    Serial.print(angular_error);
-    //    Serial.print(" ");
-    //    Serial.print("   Distance left: ");
-    //    Serial.print(fabs(distance - distanceTraversed) / 100);
+    //    Serial.print(distanceL - distanceR);
+    //Serial.print(" ");
+    //Serial.print("   Distance left: ");
+    //Serial.println(distanceTraversed);
 
-    PID_angular.Compute();
     if (fabs(distance - distanceTraversed) < distance / 2 && v > 180) {
-      v = v - 0.001 * v;
+      v -= 0.05;
     }
     else if (v < 350) {
-      v = v + 0.001 * v;
+      v = 1.001 * v;
     }
-    w = w - 0.001 * w;
 
-    md.setSpeeds(v - w, -v - w);
     //    Serial.print(" ");
     //    Serial.print("   v: ");
-    //    Serial.println(v / 100);
+    //    Serial.print(v / 100);
+    //    Serial.print(" ");
+    //    Serial.print("   w: ");
+    //    Serial.println(w / 10);
+
+    md.setSpeeds(v - w, -v - w);
+
   }
   md.setBrakes(400, 400);
 }
@@ -291,13 +384,17 @@ void left(double angle) {
   distanceR = 0;
   setPoint = 0;
   angular_error = 0;
-  v = 75;
+  v = 130;
   w = 0;
 
-  PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID PID_angular(&angular_error, &w, &setPoint, turn_kp, turn_ki, turn_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
 
-  while ( fabs(angle - fabs(angleTraversed)) > 0.1 ) {
+  //Flush the motor revs value;
+  en.getMotor1Revs();
+  en.getMotor2Revs();
+
+  while ( angle - fabs(angleTraversed) > 0.1 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -313,22 +410,22 @@ void left(double angle) {
     //    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
     //    Serial.print(" ");
     //    Serial.print("   Left error: ");
-    //    Serial.println(angular_error);
+    //    Serial.print(angular_error);
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 40.0 && v > 110) {
       v = v - 0.4;
     }
     else if (v < 250) {
-      v = v + 0.4;
+      v = v + 0.3;
     }
 
     //    Serial.print(" ");
     //    Serial.print("   v: ");
     //    Serial.println(v / 125);
     //    Serial.print("   w: ");
-    //    Serial.println(w);
+    //    Serial.println(w / 10);
 
-    md.setSpeeds((v - w) * 11 / 12, v + w);
+    md.setSpeeds((v - w) * 86 / 96, v + w);
   }
   md.setBrakes(400, 400);
 }
@@ -340,13 +437,16 @@ void right(double angle) {
   distanceR = 0;
   setPoint = 0;
   angular_error = 0;
-  v = 75;
+  v = 130;
   w = 0;
 
-  PID PID_angular(&angular_error, &w, &setPoint, angular_kp, angular_ki, angular_kd, DIRECT);
+  PID PID_angular(&angular_error, &w, &setPoint, turn_kp, turn_ki, turn_kd, DIRECT);
   PID_angular.SetMode(AUTOMATIC);
 
-  while ( fabs(angle - fabs(angleTraversed)) > 0.1 ) {
+  //Flush the motor revs value;
+  en.getMotor1Revs();
+  en.getMotor2Revs();
+  while ( angle - fabs(angleTraversed) > 0.3 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -362,25 +462,219 @@ void right(double angle) {
     //    Serial.print(fabs(angle - fabs(angleTraversed)) / 90);
     //    Serial.print(" ");
     //    Serial.print("   right error: ");
-    //    Serial.println(angular_error);
+    //    Serial.print(angular_error);
 
     PID_angular.Compute();
     if (fabs(angle - fabs(angleTraversed)) < 40.0 && v > 110) {
       v = v - 0.4;
     }
     else if (v < 250) {
-      v = v + 0.4;
+      v = v + 0.3;
     }
     //    Serial.print(" ");
     //    Serial.print("   v: ");
     //    Serial.println(v / 125);
     //    Serial.print("   w: ");
-    //    Serial.println(w);
-    md.setSpeeds((-v - w) * 11 / 12, w - v);
+    //    Serial.println(w / 10);
+    md.setSpeeds((-v - w) * 90 / 96, w - v);
   }
   md.setBrakes(400, 400);
 }
 
+void readEncoder1() {
+  en.rencoder1();
+}
+
+void readEncoder2() {
+  en.rencoder2();
+}
+
+void sendInfo(char c) {
+  String execute = String("");
+  if (c == 'e') {
+    execute = String("X") + String('x');
+  }
+  else {
+    execute = String("X") + String(c);
+  }
+  String resultFL = String(final_MedianRead(irFL)) + String(",");
+  String resultFM = String(final_MedianRead(irFM)) + String(",");
+  String resultFR = String(final_MedianRead(irFR)) + String(",");
+  String resultLF = String(final_MedianRead(irLF)) + String(",");
+  String resultLM = String(final_MedianRead(irLM)) + String(",");
+  String resultRM = String(final_MedianRead(irRM));
+  Serial.println(execute + resultFL + resultFM + resultFR + resultLF + resultLM + resultRM);
+}
+
+double final_MedianRead(int tpin) {
+  double x[21];
+
+
+  if (tpin == irFM)
+    return Ultra_Sensor();
+
+  for (int i = 0; i < 21; i ++) {
+    x[i] = distanceFinder(tpin);
+  }
+  insertionsort(x, 21);
+  return x[10];
+}
+
+
+int distanceFinder(int pin)
+{
+  int dis = 0;
+  switch (pin)
+  {
+    case irFR:
+      dis = sensorFR.distance();
+      break;
+    case irFL:
+      dis = sensorFL.distance();
+      break;
+    case irFM:
+      //dis = sensorFM.distance();
+      dis = Ultra_Sensor();
+      break;
+    case irLF:
+      dis = sensorLF.distance();
+      break;
+    case irLM:
+      dis = sensorLM.distance();
+      break;
+    case irRM:
+      dis = sensorRM.distance();
+      break;
+    default:
+      break;
+  }
+  return dis;
+}
+
+void insertionsort(double array[], int length)
+{
+  double temp;
+  for (int i = 1; i < length; i++) {
+    for (int j = i; j > 0; j--) {
+      if (array[j] < array[j - 1])
+      {
+        temp = array[j];
+        array[j] = array[j - 1];
+        array[j - 1] = temp;
+      }
+      else
+        break;
+    }
+  }
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    instructionString += inChar;
+    //    Serial.print("Serial event char: ");
+    //            Serial.println(inChar);
+    if (inChar == '\n') {
+      int i = 2;
+      while (instructionString[i] != '\n') {
+        stringValueReceived += instructionString[i];
+        i++;
+      }
+      if (stringValueReceived.length() == 0) {
+        stringValueReceived = String("10");
+      }
+      intValueReceived = stringValueReceived.toInt();
+      stringReceived = true;
+    }
+  }
+}
+
+void avoidObs() {
+  double fl, fm, fr, lm;
+  fl = final_MedianRead(irFL);
+  fm = final_MedianRead(irFM);
+  fr = final_MedianRead(irFR);
+  //  Serial.print("1fl:");
+  //  Serial.print(fl);
+  //  Serial.print("   1fm:");
+  //  Serial.print(fm);
+  //  Serial.print("   1fr:");
+  //  Serial.println(fr);
+  while ((fl > 13 || fl < 8) && (fm > 13 || fm < 8) && (fr > 13 || fr < 8)) {
+    forward(10.0);
+    fl = final_MedianRead(irFL);
+    fm = final_MedianRead(irFM);
+    fr = final_MedianRead(irFR);
+    //    Serial.print("fl:");
+    //    Serial.print(fl);
+    //    Serial.print("   fm:");
+    //    Serial.print(fm);
+    //    Serial.print("   fr:");
+    //    Serial.println(fr);
+
+    delay(50);
+  }
+
+  right(90.0);
+  delay(50);
+
+  forward(20.0);
+  delay(50);
+  left(90.0);
+
+
+  lm = final_MedianRead(irLM);
+
+  while (lm <= 16.5) {
+    forward(10.0);
+  }
+
+  forward(10.0);
+  left(90.0);
+  forward(10.0);
+}
+
+void PWM_Mode_Setup()
+{
+  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
+  int URTRIG = 12; // PWM trigger pin 5
+  uint8_t EnPwmCmd[4] = {0x44, 0x02, 0xbb, 0x01};
+  pinMode(URTRIG, OUTPUT);                    // A low pull on pin COMP/TRIG
+  digitalWrite(URTRIG, HIGH);                 // Set to HIGH
+
+  pinMode(URPWM, INPUT);                      // Sending Enable PWM mode command
+
+  for (int i = 0; i < 4; i++)
+  {
+    Serial.write(EnPwmCmd[i]);
+  }
+}
+
+double Ultra_Sensor()
+{ // a low pull on pin COMP/TRIG  triggering a sensor reading
+  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
+  int URTRIG = 12; // PWM trigger pin 5
+  double Distance = 0;
+  digitalWrite(URTRIG, LOW);
+  digitalWrite(URTRIG, HIGH);               // reading Pin PWM will output pulses
+
+  unsigned long DistanceMeasured = pulseIn(URPWM, LOW);
+
+  if (DistanceMeasured >= 10200)
+  { // the reading is invalid.
+    //Serial.println("Invalid");
+    Distance = -1;
+  }
+  else
+  {
+    Distance = DistanceMeasured / 50;       // every 50us low level stands for 1cm
+    // Serial.print("Distance=");
+    // Serial.print(Distance);
+    // Serial.println("cm");
+  }
+
+  return Distance;
+}
 
 void curved(double forward)
 {
@@ -448,223 +742,8 @@ void curved(double forward)
     Serial.print(" ");
 
   }
-
-
   md.setBrakes(400, 400);
-
-
-
-  /*  while ( fabs(90 - fabs(angleTraversed)) > 0.8 ) {
-     distanceL += 2 * Pi * wheelRadius * en.getMotor1Revs();
-     distanceR += 2 * Pi * wheelRadius * en.getMotor2Revs();
-
-     angleTraversed = (distanceR - distanceL) / distanceBetweenWheels;
-     angleTraversed = (angleTraversed * 4068) / 71;
-
-     angular_error = distanceL + distanceR;
-
-     //    Serial.print("   L: ");
-     //    Serial.print(distanceL);
-     //    Serial.print("   R: ");
-     //    Serial.print(distanceR);
-     Serial.print("   angle left: ");
-     Serial.print(fabs(90 - fabs(angleTraversed)) / 90);
-     Serial.print(" ");
-     Serial.print("   Left error: ");
-     Serial.print(angular_error);
-     PID_angular.Compute();
-     if (fabs(90 - fabs(angleTraversed)) < 80.0 && v > 100) {
-       v = v - 0.4;
-     }
-     else if (v < 250) {
-       v = v + 0.4;
-     }
-
-     Serial.print(" ");
-     Serial.print("   v: ");
-     Serial.println(v / 125);
-     //    Serial.print("   w: ");
-     //    Serial.println(w);
-
-     md.setSpeeds(cons_l , v + 2*w);
-    }*/
-
-  //  md.setBrakes(400, 400);
-
-
-
-}
-
-void readEncoder1() {
-  en.rencoder1();
-}
-
-void readEncoder2() {
-  en.rencoder2();
-}
-
-void Export_Sensors() {
-  String resultFR  = String("fr:") + String(final_MedianRead(irFR));
-  String resultFL  =  String("fl:") + String(final_MedianRead(irFL));
-  String resultFM  =  String("fm:") + String(final_MedianRead(irFM));
-  String resultLF = String("lf:") + String(final_MedianRead(irLF));
-  String resultLM = String("lm:") + String(final_MedianRead(irLM));
-  String resultRM = String("rm:") + String(final_MedianRead(irRM));
-  Serial.println(resultFR + resultFL + resultFM + resultLF + resultLM + resultRM);
-
-}
-
-double final_MedianRead(int tpin) {
-  double x[21];
-
-
- if (tpin == irFM)
-    return Ultra_Sensor();
-    
-  for (int i = 0; i < 21; i ++) {
-    x[i] = distanceFinder(tpin);
-  }
-  insertionsort(x, 21);
-  return x[10];
 }
 
 
-int distanceFinder(int pin)
-{
-  int dis = 0;
-  switch (pin)
-  {
-    case irFR:
-      dis = sensorFR.distance();
-      break;
-    case irFL:
-      dis = sensorFL.distance();
-      break;
-    case irFM:
-      //dis = sensorFM.distance();
-      dis = Ultra_Sensor();
-      break;
-    case irLF:
-      dis = sensorLF.distance();
-      break;
-    case irLM:
-      dis = sensorLM.distance();
-      break;
-    case irRM:
-      dis = sensorRM.distance();
-      break;
-    default:
-      break;
-  }
-  return dis;
-}
-
-void insertionsort(double array[], int length)
-{
-  double temp;
-  for (int i = 1; i < length; i++) {
-    for (int j = i; j > 0; j--) {
-      if (array[j] < array[j - 1])
-      {
-        temp = array[j];
-        array[j] = array[j - 1];
-        array[j - 1] = temp;
-      }
-      else
-        break;
-    }
-  }
-}
-
-void serialEvent() {
-  while (Serial.available()) {
-    char inChar = (char)Serial.read();
-    instructionString += inChar;
-    if (inChar == '\n') {
-      stringReceived = true;
-    }
-  }
-}
-
-void avoidObs() {
-  double fl, fm, fr, lm;
-  fl = final_MedianRead(irFL);
-  fm = final_MedianRead(irFM);
-  fr = final_MedianRead(irFR);
-
-  while (fl > 16.5 && fm > 16.5 && fr > 16.5) {
-    forward(10.0);
-    fl = final_MedianRead(irFL);
-    fm = final_MedianRead(irFM);
-    fr = final_MedianRead(irFR);
-  }
-
-  right(90.0);
-
-  lm = final_MedianRead(irLM);
-
-  while (lm <= 16.5) {
-    forward(10.0);
-    lm = final_MedianRead(irLM);
-  }
-
-  forward(10.0);
-  left(90.0);
-
-  lm = final_MedianRead(irLM);
-
-  while (lm <= 16.5) {
-    forward(10.0);
-  }
-
-  forward(10.0);
-  left(90.0);
-  forward(10.0);
-
-
-}
-
-void PWM_Mode_Setup()
-{
-  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
-  int URTRIG = 12; // PWM trigger pin 5  
-  uint8_t EnPwmCmd[4] = {0x44, 0x02, 0xbb, 0x01};
-  pinMode(URTRIG, OUTPUT);                    // A low pull on pin COMP/TRIG
-  digitalWrite(URTRIG, HIGH);                 // Set to HIGH
-
-  pinMode(URPWM, INPUT);                      // Sending Enable PWM mode command
-
-  for (int i = 0; i < 4; i++)
-  {
-    Serial.write(EnPwmCmd[i]);
-  }
-}
-
-double Ultra_Sensor()
-{ // a low pull on pin COMP/TRIG  triggering a sensor reading
-  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
-  int URTRIG = 12; // PWM trigger pin 5
-  double Distance = 0;
-  digitalWrite(URTRIG, LOW);
-  digitalWrite(URTRIG, HIGH);               // reading Pin PWM will output pulses
-
-  unsigned long DistanceMeasured = pulseIn(URPWM, LOW);
-
-  if (DistanceMeasured >= 10200)
-  { // the reading is invalid.
-    //Serial.println("Invalid");
-    Distance=-1;
-  }
-  else
-  {
-    Distance = DistanceMeasured / 50;       // every 50us low level stands for 1cm
-   // Serial.print("Distance=");
-   // Serial.print(Distance);
-   // Serial.println("cm");
-  }
-  
-  return Distance;
-  
-
-}
 

@@ -2,13 +2,16 @@ bool stringReceived = false;
 String inputString = "";
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   inputString.reserve(200);
+  pinMode(13, OUTPUT);
 }
 
 void loop() {
   if (stringReceived) {
-    Serial.print(inputString);
+    if (inputString[0] == 'w'){
+      Serial.print(inputString);
+    }
     inputString = "";
     stringReceived = false;
   }
