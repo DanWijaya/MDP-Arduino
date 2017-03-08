@@ -7,10 +7,10 @@
 #include <math.h>
 #include "Arduino.h"
 
-#define enA1    3
-#define enB1    5
-#define enA2    11
-#define enB2    13
+#define enA1    11
+#define enB1    13
+#define enA2    3
+#define enB2    5
 #define wheelRadius 3.07
 #define distanceBetweenWheels 17
 
@@ -35,10 +35,10 @@
 
 #define irFM A0
 #define irFL A1
-#define irFR A2
+#define irFR A5
 #define irLF A3
-#define irLM A4
-#define irRM A5
+#define irLM A2
+#define irRM A4
 
 /**
    Function Declarations
@@ -102,8 +102,8 @@ void setup()
   Serial.flush();
 
   //  Attach interrupts to encoder pins
-  attachInterrupt(digitalPinToInterrupt(enA1), readEncoder1, FALLING);
-  PCintPort::attachInterrupt(enA2, readEncoder2, FALLING);
+  attachInterrupt(digitalPinToInterrupt(enA2), readEncoder2, FALLING);
+  PCintPort::attachInterrupt(enA1, readEncoder1, FALLING);
 
   PWM_Mode_Setup();
 
@@ -145,7 +145,7 @@ void loop()
 //    stringValueReceived = "";
 //    stringReceived = false;
 //  }
-  //  delay(200);
+//    delay(200);
   //      Serial.println(analogRead(A4));
   //    Serial.println(sensorFR.distance());
   //     avoidObs();
@@ -160,15 +160,15 @@ void loop()
   //    instructionString = "";
   //    stringReceived = false;
   //  }
-  // wall_alignment();
+   wall_alignment();
   // d=Ultra_Sensor();
   //Serial.print(d);
   //Serial.print("  ");
-  //  delay(200);
+    delay(200);
 
-    delay(100);
-
-  forward(10.0);
+//    delay(100);
+//sendInfo('x');
+//  forward(10.0);
   //curved(40.0);
   // forward(30.0);
   // md.setSpeeds(400, 400);
@@ -190,10 +190,10 @@ void loop()
 void wall_alignment()
 {
 
-  double fl, fm, fr, lm, l_m_distance = 6, m_r_distance = 4, l_r_distance = 10, y1, y2, x;
+  double fl, fm, fr, lm, l_m_distance = 5.5, m_r_distance = 4.8, l_r_distance = 10.3, y1, y2, x;
   boolean aligned = false, turn_right = false, turn_left = false;
 
-  int count = 0;
+  int count = -9999;
 
   while (count < 3 && aligned == false)
   {
@@ -202,17 +202,17 @@ void wall_alignment()
     fm = final_MedianRead(irFM);
     fr = final_MedianRead(irFR);
 
-    Serial.print(fl);
-    Serial.print("  ");
-    Serial.print(fm);
-    Serial.print("  ");
-    Serial.print(fr);
-    Serial.print("  ");
+//    Serial.print(fl);
+//    Serial.print("  ");
+//    Serial.print(fm);
+//    Serial.print("  ");
+//    Serial.print(fr);
+//    Serial.println("  ");
 
-    if (fl - fr <= fabs(2) || fl - fm <= fabs(1) || fm - fr <= fabs(1))
-      aligned = true;
-
-    if (aligned != true )
+//    if (fl - fr <= fabs(2) || fl - fm <= fabs(1) || fm - fr <= fabs(1))
+//      aligned = true;
+//
+//    if (aligned != true )
 
 
       if (fl == fr || fl == fm || fm == fr)
@@ -221,7 +221,7 @@ void wall_alignment()
     if (aligned != false )
 
     {
-      Serial.print("inside if ");
+     // Serial.print("inside if ");
       if (fl > fr)
       {
         y2 = fl - fr;
@@ -229,20 +229,25 @@ void wall_alignment()
         x = m_r_distance;
         turn_right = true;
       }
-      else if (fr < fl)
+      else if (fr > fl)
       {
         y2 = fr - fl;
         y1 = fm - fl;
         x = l_m_distance;
         turn_left = true;
+       // Serial.print("inside left ");
       }
 
 
-      double angle_error = min(atan2(y2, l_r_distance), atan2(y1, x));
-      angle_error = angle_error * 360 * 7 / 22;
+      double angle_error = max(atan2(y2, l_r_distance), atan2(y1, x));
+      angle_error = angle_error * 360 * 7 / 44;
       Serial.print("angle error ");
-      Serial.print(turn_right);
-      Serial.print("  ");
+      Serial.println(angle_error);
+      Serial.println(aligned);
+//      Serial.print("  ");
+//      Serial.print(y2);
+//       Serial.print("  ");
+//      Serial.println(x);
 
 
       if (turn_right)
@@ -268,7 +273,7 @@ void forward(double distance) {
   distanceL = 0;
   distanceR = 0;
   angular_error = 0;
-  setPoint = 0;
+  setPoint = 0.1;
   v = 180;
   w = 0;
 
@@ -280,8 +285,8 @@ void forward(double distance) {
   en.getMotor2Revs();
 
   while ( distance - distanceTraversed > 0.5) {
-    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
-    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
+    distanceL += 2 * pi * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * pi * wheelRadius * en.getMotor2Revs();
 
     //    Serial.print("   DistanceL: ");
     //    Serial.print(distanceL);
@@ -314,7 +319,7 @@ void forward(double distance) {
     //    Serial.print("   w: ");
     //    Serial.println(w / 10);
 
-    md.setSpeeds((-v - w) * 90 / 96, v - w);
+    md.setSpeeds((-v - w) * 87 / 96, v - w);
 
   }
 
@@ -394,7 +399,7 @@ void left(double angle) {
   en.getMotor1Revs();
   en.getMotor2Revs();
 
-  while ( angle - fabs(angleTraversed) > 0.1 ) {
+  while ( angle - fabs(angleTraversed) > 0.8 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -446,7 +451,7 @@ void right(double angle) {
   //Flush the motor revs value;
   en.getMotor1Revs();
   en.getMotor2Revs();
-  while ( angle - fabs(angleTraversed) > 0.3 ) {
+  while ( angle - fabs(angleTraversed) > 0.8 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -652,8 +657,8 @@ void PWM_Mode_Setup()
 
 double Ultra_Sensor()
 { // a low pull on pin COMP/TRIG  triggering a sensor reading
-  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
-  int URTRIG = 12; // PWM trigger pin 5
+  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3 yellow
+  int URTRIG = 12; // PWM trigger pin 5 green
   double Distance = 0;
   digitalWrite(URTRIG, LOW);
   digitalWrite(URTRIG, HIGH);               // reading Pin PWM will output pulses
