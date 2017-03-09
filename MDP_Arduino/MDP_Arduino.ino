@@ -4,7 +4,7 @@
 #include "SharpIR.h"
 #include "PID_v1.h"
 
-#include <math.h>
+#include "math.h"
 #include "Arduino.h"
 
 #define enA1    11
@@ -107,9 +107,6 @@ void setup()
 
   PWM_Mode_Setup();
 
-  //  emergency brake
-  //  PCintPort::attachInterrupt(A5, Export_Sensors, RISING);
-
   // Serial data
   instructionString.reserve(200);
 }
@@ -119,18 +116,22 @@ void loop()
   if (stringReceived)  {
     if (instructionString[0] == 'm') {
       if (instructionString[1] == 'w') {
+        wall_alignment();
         forward(intValueReceived);
         sendInfo(instructionString[1]);
       }
       else if (instructionString[1] == 's') {
+        wall_alignment();
         backward(intValueReceived);
         sendInfo(instructionString[1]);
       }
       else if (instructionString[1] == 'a') {
+        wall_alignment();
         left(90.0);
         sendInfo(instructionString[1]);
       }
       else if (instructionString[1] == 'd') {
+        wall_alignment();
         right (90.0);
         sendInfo(instructionString[1]);
       }
@@ -145,7 +146,7 @@ void loop()
     stringValueReceived = "";
     stringReceived = false;
   }
-    //delay(200);
+  //delay(200);
   //      Serial.println(analogRead(A4));
   //    Serial.println(sensorFR.distance());
   //     avoidObs();
@@ -163,58 +164,58 @@ void loop()
 
 
   /*
-   * Wall Alignment Test
-   */
-   //wall_alignment();
-   //d=Ultra_Sensor();
-   //Serial.print(d);
-   //Serial.print("  ");
-   //delay(200);
+     Wall Alignment Test
+  */
+  //wall_alignment();
+  //d=Ultra_Sensor();
+  //Serial.print(d);
+  //Serial.print("  ");
+  //delay(200);
 
   //sendInfo('x');
 
   //Path Test
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   right(90.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   left(90.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   left(90.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   right(90.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-//   forward(10.0);
-//   delay(100);
-   
-//    left(90.0);
-//    delay(100);
-//    right(90.0);
-//    delay(100);
-//    while (1) {}
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   right(90.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   left(90.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   left(90.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   right(90.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+  //   forward(10.0);
+  //   delay(100);
+
+  //    left(90.0);
+  //    delay(100);
+  //    right(90.0);
+  //    delay(100);
+  //    while (1) {}
 
 
 }
@@ -222,82 +223,141 @@ void loop()
 
 void wall_alignment()
 {
+  double fl, fm, fr, distBtwnSensors, angle, sensorA, sensorB;
+  distBtwnSensors = 17.0;
 
-  double fl, fm, fr, lm, l_m_distance = 5.5, m_r_distance = 4.8, l_r_distance = 10.3, y1, y2, x;
-  boolean aligned = false, turn_right = false, turn_left = false;
+  fl = final_MedianRead(irFL);
+  fl = final_MedianRead(irFM);
+  fr = final_MedianRead(irFR);
 
-  int count = -9999;
-
-  while (count < 3 && aligned == false)
-  {
-
-    fl = final_MedianRead(irFL);
-    fm = final_MedianRead(irFM);
-    fr = final_MedianRead(irFR);
-
-//    Serial.print(fl);
-//    Serial.print("  ");
-//    Serial.print(fm);
-//    Serial.print("  ");
-//    Serial.print(fr);
-//    Serial.println("  ");
-
-//    if (fl - fr <= fabs(2) || fl - fm <= fabs(1) || fm - fr <= fabs(1))
-//      aligned = true;
-//
-//    if (aligned != true )
-
-
-      if (fl == fr || fl == fm || fm == fr)
-        aligned = true;
-
-    if (aligned != false )
-
-    {
-     // Serial.print("inside if ");
-      if (fl > fr)
-      {
-        y2 = fl - fr;
-        y1 = fm - fr;
-        x = m_r_distance;
-        turn_right = true;
-      }
-      else if (fr > fl)
-      {
-        y2 = fr - fl;
-        y1 = fm - fl;
-        x = l_m_distance;
-        turn_left = true;
-       // Serial.print("inside left ");
-      }
-
-
-      double angle_error = max(atan2(y2, l_r_distance), atan2(y1, x));
-      angle_error = angle_error * 360 * 7 / 44;
-      Serial.print("angle error ");
-      Serial.println(angle_error);
-      Serial.println(aligned);
-//      Serial.print("  ");
-//      Serial.print(y2);
-//       Serial.print("  ");
-//      Serial.println(x);
-
-
-      if (turn_right)
-      {
-        right(angle_error);
-        turn_right = false;
-      }
-      else if (turn_left)
-      {
-        left(angle_error);
-        turn_left = false;
-      }
-      count++;
+  if (fl != -1) {
+    if (fr != -1) {
+      sensorA = fl;
+      sensorB = fr;
+    }
+    else {
+      sensorA = fl;
+      sensorB = fm;
     }
   }
+  else if (fr != -1) {
+    sensorA = fm;
+    sensorB = fr;
+  }
+  else {
+    return;
+  }
+
+  if (!(sensorA <= 21.0 && sensorA >= 9.0) && !(sensorB <= 21.0 && sensorB >= 9.0)) {
+    return;
+  }
+  else {
+    if (fl == fr) {
+      if (fl == 17.0) {
+        return;
+      }
+      else if (fl < 17.0) {
+        backward(17.0 - fl);
+        wall_alignment();
+      }
+      else if (fl > 17.0) {
+        forward(fl - 17.0);
+        wall_alignment();
+      }
+    }
+    else {
+      if (fr > fl) {
+        angle = asin((fr - fl) / distBtwnSensors);
+        left(angle);
+      }
+      else {
+        angle = asin((fl - fr) / distBtwnSensors);
+        right(angle);
+      }
+      wall_alignment();
+    }
+  }
+
+
+  //  double fl, fm, fr, lm, l_m_distance = 5.5, m_r_distance = 4.8, l_r_distance = 10.3, y1, y2, x;
+  //  boolean aligned = false, turn_right = false, turn_left = false;
+  //
+  //  int count = -9999;
+  //
+  //  while (count < 3 && aligned == false)
+  //  {
+  //
+  //    fl = final_MedianRead(irFL);
+  //    fm = final_MedianRead(irFM);
+  //    fr = final_MedianRead(irFR);
+  //
+  //    //    Serial.print(fl);
+  //    //    Serial.print("  ");
+  //    //    Serial.print(fm);
+  //    //    Serial.print("  ");
+  //    //    Serial.print(fr);
+  //    //    Serial.println("  ");
+  //
+  //    //    if (fl - fr <= fabs(2) || fl - fm <= fabs(1) || fm - fr <= fabs(1))
+  //    //      aligned = true;
+  //    //
+  //    //    if (aligned != true )
+  //
+  //
+  //    if (fl == fr || fl == fm || fm == fr)
+  //      aligned = true;
+  //
+  //    if (aligned != false )
+  //
+  //    {
+  //      // Serial.print("inside if ");
+  //      if (fl > fr)
+  //      {
+  //        y2 = fl - fr;
+  //        y1 = fm - fr;
+  //        x = m_r_distance;
+  //        turn_right = true;
+  //      }
+  //      else if (fr > fl)
+  //      {
+  //        y2 = fr - fl;
+  //        y1 = fm - fl;
+  //        x = l_m_distance;
+  //        turn_left = true;
+  //        // Serial.print("inside left ");
+  //      }
+  //
+  //
+  //      double angle_error = max(atan2(y2, l_r_distance), atan2(y1, x));
+  //      angle_error = angle_error * 360 * 7 / 44;
+  //      Serial.print("angle error ");
+  //      Serial.println(angle_error);
+  //      Serial.println(aligned);
+  //      //      Serial.print("  ");
+  //      //      Serial.print(y2);
+  //      //       Serial.print("  ");
+  //      //      Serial.println(x);
+  //
+  //
+  //      if (turn_right)
+  //      {
+  //        right(angle_error);
+  //        turn_right = false;
+  //      }
+  //      else if (turn_left)
+  //      {
+  //        left(angle_error);
+  //        turn_left = false;
+  //      }
+  //      count++;
+  //    }
+  //  }
 }
 
+
+/*
+      Motion Control ********************************************************************************************************************************
+*/
 
 void forward(double distance) {
   double  distanceTraversed, angular_error, v, w, setPoint;
@@ -318,8 +378,8 @@ void forward(double distance) {
   en.getMotor2Revs();
 
   while ( distance - distanceTraversed > 0.5) {
-    distanceL += 2 * pi * wheelRadius * en.getMotor1Revs();
-    distanceR += 2 * pi * wheelRadius * en.getMotor2Revs();
+    distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
+    distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
     //    Serial.print("   DistanceL: ");
     //    Serial.print(distanceL);
@@ -330,8 +390,8 @@ void forward(double distance) {
     distanceTraversed = (distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
-        Serial.print("   Forward error: ");
-        Serial.println(distanceL - distanceR);
+    Serial.print("   Forward error: ");
+    Serial.println(distanceL - distanceR);
     //Serial.print(" ");
     //Serial.print("   Distance left: ");
     //Serial.println(distanceTraversed);
@@ -388,9 +448,9 @@ void backward(double distance) {
     distanceTraversed = -(distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
-    //
-    //    Serial.print("   Back error: ");
-    //    Serial.print(distanceL - distanceR);
+
+    //Serial.print("   Back error: ");
+    //Serial.print(distanceL - distanceR);
     //Serial.print(" ");
     //Serial.print("   Distance left: ");
     //Serial.println(distanceTraversed);
@@ -432,7 +492,7 @@ void left(double angle) {
   en.getMotor1Revs();
   en.getMotor2Revs();
 
-  while ( angle - fabs(angleTraversed) > 2.7 ) {
+  while ( angle - fabs(angleTraversed) > 2.8 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -484,7 +544,7 @@ void right(double angle) {
   //Flush the motor revs value;
   en.getMotor1Revs();
   en.getMotor2Revs();
-  while ( angle - fabs(angleTraversed) > 2.7 ) {
+  while ( angle - fabs(angleTraversed) > 2.8 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -527,6 +587,10 @@ void readEncoder2() {
   en.rencoder2();
 }
 
+/*
+   Sensor Reading ***************************************************************************************
+*/
+
 void sendInfo(char c) {
   String execute = String("");
   if (c == 'e') {
@@ -566,9 +630,15 @@ int distanceFinder(int pin)
   {
     case irFR:
       dis = sensorFR.distance();
+      if (dis < 7 || dis > 30) {
+        dis = -1;
+      }
       break;
     case irFL:
       dis = sensorFL.distance();
+      if (dis < 7 || dis > 30) {
+        dis = -1;
+      }
       break;
     case irFM:
       //dis = sensorFM.distance();
@@ -576,12 +646,21 @@ int distanceFinder(int pin)
       break;
     case irLF:
       dis = sensorLF.distance();
+      if (dis < 7 || dis > 30) {
+        dis = -1;
+      }
       break;
     case irLM:
       dis = sensorLM.distance();
+      if (dis < 7 || dis > 30) {
+        dis = -1;
+      }
       break;
     case irRM:
       dis = sensorRM.distance();
+      if (dis < 17 || dis > 65) {
+        dis = -1;
+      }
       break;
     default:
       break;
@@ -589,6 +668,47 @@ int distanceFinder(int pin)
   return dis;
 }
 
+void PWM_Mode_Setup()
+{
+  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
+  int URTRIG = 12; // PWM trigger pin 5
+  uint8_t EnPwmCmd[4] = {0x44, 0x02, 0xbb, 0x01};
+  pinMode(URTRIG, OUTPUT);                    // A low pull on pin COMP/TRIG
+  digitalWrite(URTRIG, HIGH);                 // Set to HIGH
+
+  pinMode(URPWM, INPUT);                      // Sending Enable PWM mode command
+
+  for (int i = 0; i < 4; i++)
+  {
+    Serial.write(EnPwmCmd[i]);
+  }
+}
+
+double Ultra_Sensor()
+{ // a low pull on pin COMP/TRIG  triggering a sensor reading
+  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3 yellow
+  int URTRIG = 12; // PWM trigger pin 5 green
+  double Distance = 0;
+  digitalWrite(URTRIG, LOW);
+  digitalWrite(URTRIG, HIGH);               // reading Pin PWM will output pulses
+
+  unsigned long DistanceMeasured = pulseIn(URPWM, LOW);
+
+  if (DistanceMeasured >= 10200)
+  { // the reading is invalid.
+    //Serial.println("Invalid");
+    Distance = -1;
+  }
+  else
+  {
+    Distance = DistanceMeasured / 50;       // every 50us low level stands for 1cm
+    // Serial.print("Distance=");
+    // Serial.print(Distance);
+    // Serial.println("cm");
+  }
+
+  return Distance;
+}
 void insertionsort(double array[], int length)
 {
   double temp;
@@ -626,6 +746,11 @@ void serialEvent() {
     }
   }
 }
+
+
+/*
+   Checklist *********************************************************************************
+*/
 
 void avoidObs() {
   double fl, fm, fr, lm;
@@ -670,48 +795,6 @@ void avoidObs() {
   forward(10.0);
   left(90.0);
   forward(10.0);
-}
-
-void PWM_Mode_Setup()
-{
-  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
-  int URTRIG = 12; // PWM trigger pin 5
-  uint8_t EnPwmCmd[4] = {0x44, 0x02, 0xbb, 0x01};
-  pinMode(URTRIG, OUTPUT);                    // A low pull on pin COMP/TRIG
-  digitalWrite(URTRIG, HIGH);                 // Set to HIGH
-
-  pinMode(URPWM, INPUT);                      // Sending Enable PWM mode command
-
-  for (int i = 0; i < 4; i++)
-  {
-    Serial.write(EnPwmCmd[i]);
-  }
-}
-
-double Ultra_Sensor()
-{ // a low pull on pin COMP/TRIG  triggering a sensor reading
-  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3 yellow
-  int URTRIG = 12; // PWM trigger pin 5 green
-  double Distance = 0;
-  digitalWrite(URTRIG, LOW);
-  digitalWrite(URTRIG, HIGH);               // reading Pin PWM will output pulses
-
-  unsigned long DistanceMeasured = pulseIn(URPWM, LOW);
-
-  if (DistanceMeasured >= 10200)
-  { // the reading is invalid.
-    //Serial.println("Invalid");
-    Distance = -1;
-  }
-  else
-  {
-    Distance = DistanceMeasured / 50;       // every 50us low level stands for 1cm
-    // Serial.print("Distance=");
-    // Serial.print(Distance);
-    // Serial.println("cm");
-  }
-
-  return Distance;
 }
 
 void curved(double forward)
