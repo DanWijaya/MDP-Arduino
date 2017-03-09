@@ -34,12 +34,14 @@
 #define SHORT 1080
 
 #define irFM A0
-#define irFL A1
+#define irFL A4
 #define irFR A5
-#define irLF A3
-#define irLM A2
-#define irRM A4
-
+#define irLF A1
+#define irLM A3
+#define irRM A2
+#define distBtwnLR 16.2
+#define distBtwnLM 8.4
+#define distBtwnMR 7.8
 /**
    Function Declarations
 */
@@ -113,40 +115,40 @@ void setup()
 
 void loop()
 {
-  if (stringReceived)  {
-    if (instructionString[0] == 'm') {
-      if (instructionString[1] == 'w') {
-        wall_alignment();
-        forward(intValueReceived);
-        sendInfo(instructionString[1]);
+    if (stringReceived)  {
+      if (instructionString[0] == 'm') {
+        if (instructionString[1] == 'w') {
+//          wall_alignment();
+          forward(intValueReceived);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 's') {
+//          wall_alignment();
+          backward(intValueReceived);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 'a') {
+//          wall_alignment();
+          left(90.0);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 'd') {
+//          wall_alignment();
+          right (90.0);
+          sendInfo(instructionString[1]);
+        }
+        else
+          instructionString = "";
+  
       }
-      else if (instructionString[1] == 's') {
-        wall_alignment();
-        backward(intValueReceived);
-        sendInfo(instructionString[1]);
+      else if (instructionString.equals(String("start\n"))) {
+        sendInfo('e');
       }
-      else if (instructionString[1] == 'a') {
-        wall_alignment();
-        left(90.0);
-        sendInfo(instructionString[1]);
-      }
-      else if (instructionString[1] == 'd') {
-        wall_alignment();
-        right (90.0);
-        sendInfo(instructionString[1]);
-      }
-      else
-        instructionString = "";
-
+      instructionString = "";
+      stringValueReceived = "";
+      stringReceived = false;
     }
-    else if (instructionString.equals(String("start\n"))) {
-      sendInfo('e');
-    }
-    instructionString = "";
-    stringValueReceived = "";
-    stringReceived = false;
-  }
-  //delay(200);
+//  delay(200);
   //      Serial.println(analogRead(A4));
   //    Serial.println(sensorFR.distance());
   //     avoidObs();
@@ -166,7 +168,7 @@ void loop()
   /*
      Wall Alignment Test
   */
-  //wall_alignment();
+//  wall_alignment();
   //d=Ultra_Sensor();
   //Serial.print(d);
   //Serial.print("  ");
@@ -215,7 +217,7 @@ void loop()
   //    delay(100);
   //    right(90.0);
   //    delay(100);
-  //    while (1) {}
+//      while (1) {}
 
 
 }
@@ -223,56 +225,86 @@ void loop()
 
 void wall_alignment()
 {
-  double fl, fm, fr, distBtwnSensors, angle, sensorA, sensorB;
-  distBtwnSensors = 17.0;
-
+  double fl, fm, fr, angle, sensorA, sensorB;
+  uint8_t choice = 0;
   fl = final_MedianRead(irFL);
-  fl = final_MedianRead(irFM);
+  fm = final_MedianRead(irFM);
   fr = final_MedianRead(irFR);
-
+  Serial.print("fl: ");
+  Serial.print(fl);
+  Serial.print("   fm: ");
+  Serial.print(fm);
+  Serial.print("   fr: ");
+  Serial.println(fr);
   if (fl != -1) {
     if (fr != -1) {
       sensorA = fl;
       sensorB = fr;
+      choice = 0;
     }
     else {
       sensorA = fl;
       sensorB = fm;
+      choice = 1;
     }
   }
   else if (fr != -1) {
     sensorA = fm;
     sensorB = fr;
+    choice = 2;
   }
   else {
+    Serial.println("return**********************************");
     return;
   }
 
   if (!(sensorA <= 21.0 && sensorA >= 9.0) && !(sensorB <= 21.0 && sensorB >= 9.0)) {
+    Serial.println("return**********************************");
     return;
   }
   else {
-    if (fl == fr) {
-      if (fl == 17.0) {
+    if (sensorA == sensorB) {
+      if (sensorA == 17.0) {
+        Serial.println("return**********************************");
         return;
       }
-      else if (fl < 17.0) {
-        backward(17.0 - fl);
+      else if (sensorA < 17.0) {
+        backward(17.0 - sensorA);
         wall_alignment();
       }
-      else if (fl > 17.0) {
-        forward(fl - 17.0);
+      else if (sensorA > 17.0) {
+        forward(sensorA - 17.0);
         wall_alignment();
       }
     }
     else {
-      if (fr > fl) {
-        angle = asin((fr - fl) / distBtwnSensors);
-        left(angle);
+      if (sensorA > sensorB) {
+        if (choice == 0) {
+          angle = asin((sensorA - sensorB) / distBtwnLR);
+          right(RAD_TO_DEG * angle);
+        }
+        else if (choice == 1) {
+          angle = asin((sensorA - sensorB) / distBtwnLM);
+          right(RAD_TO_DEG * angle);
+        }
+        else {
+          angle = asin((sensorA - sensorB) / distBtwnMR);
+          right(RAD_TO_DEG * angle);
+        }
       }
       else {
-        angle = asin((fl - fr) / distBtwnSensors);
-        right(angle);
+        if (choice == 0) {
+          angle = asin((sensorB - sensorA) / distBtwnLR);
+          left(RAD_TO_DEG * angle);
+        }
+        else if (choice == 1) {
+          angle = asin((sensorB - sensorA) / distBtwnLM);
+          left(RAD_TO_DEG * angle);
+        }
+        else {
+          angle = asin((sensorB - sensorA) / distBtwnMR);
+          left(RAD_TO_DEG * angle);
+        }
       }
       wall_alignment();
     }
@@ -377,7 +409,7 @@ void forward(double distance) {
   en.getMotor1Revs();
   en.getMotor2Revs();
 
-  while ( distance - distanceTraversed > 0.5) {
+  while ( distance - distanceTraversed > 0.8) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -630,15 +662,15 @@ int distanceFinder(int pin)
   {
     case irFR:
       dis = sensorFR.distance();
-      if (dis < 7 || dis > 30) {
-        dis = -1;
-      }
+//      if (dis < 7 || dis > 30) {
+//        dis = -1;
+//      }
       break;
     case irFL:
       dis = sensorFL.distance();
-      if (dis < 7 || dis > 30) {
-        dis = -1;
-      }
+//      if (dis < 7 || dis > 30) {
+//        dis = -1;
+//      }
       break;
     case irFM:
       //dis = sensorFM.distance();
@@ -646,21 +678,21 @@ int distanceFinder(int pin)
       break;
     case irLF:
       dis = sensorLF.distance();
-      if (dis < 7 || dis > 30) {
-        dis = -1;
-      }
+//      if (dis < 7 || dis > 30) {
+//        dis = -1;
+//      }
       break;
     case irLM:
       dis = sensorLM.distance();
-      if (dis < 7 || dis > 30) {
-        dis = -1;
-      }
+//      if (dis < 7 || dis > 30) {
+//        dis = -1;
+//      }
       break;
     case irRM:
       dis = sensorRM.distance();
-      if (dis < 17 || dis > 65) {
-        dis = -1;
-      }
+//      if (dis < 17 || dis > 65) {
+//        dis = -1;
+//      }
       break;
     default:
       break;
