@@ -39,9 +39,8 @@
 #define irLF A1
 #define irLM A3
 #define irRM A2
-#define distBtwnLR 16.2
-#define distBtwnLM 8.4
-#define distBtwnMR 7.8
+#define distBtwnLR 17
+
 /**
    Function Declarations
 */
@@ -64,6 +63,7 @@ String stringValueReceived = "";
 int intValueReceived = 0;
 bool stringReceived = false;
 double d;
+long timeStartAlign = 0;
 
 DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
@@ -115,48 +115,48 @@ void setup()
 
 void loop()
 {
-    if (stringReceived)  {
-      if (instructionString[0] == 'm') {
-        if (instructionString[1] == 'w') {
-//          wall_alignment();
-          forward(intValueReceived);
-          sendInfo(instructionString[1]);
-        }
-        else if (instructionString[1] == 's') {
-//          wall_alignment();
-          backward(intValueReceived);
-          sendInfo(instructionString[1]);
-        }
-        else if (instructionString[1] == 'a') {
-//          wall_alignment();
-          left(90.0);
-          sendInfo(instructionString[1]);
-        }
-        else if (instructionString[1] == 'd') {
-//          wall_alignment();
-          right (90.0);
-          sendInfo(instructionString[1]);
-        }
-        else
-          instructionString = "";
-  
+  if (stringReceived)  {
+    if (instructionString[0] == 'm') {
+      if (instructionString[1] == 'w') {
+        forward(intValueReceived);
+        sendInfo(instructionString[1]);
       }
-      else if (instructionString.equals(String("start\n"))) {
-        sendInfo('e');
+      else if (instructionString[1] == 's') {
+        backward(intValueReceived);
+        sendInfo(instructionString[1]);
       }
-      instructionString = "";
-      stringValueReceived = "";
-      stringReceived = false;
+      else if (instructionString[1] == 'a') {
+        left(90.0);
+        sendInfo(instructionString[1]);
+      }
+      else if (instructionString[1] == 'd') {
+        right (90.0);
+        sendInfo(instructionString[1]);
+      }
+      else if (instructionString[1] == 'l') {
+        timeStartAlign = millis();
+        wall_alignment();
+        sendInfo(instructionString[1]);
+      }
+      else
+        instructionString = "";
     }
-//  delay(200);
+    else if (instructionString.equals(String("start\n"))) {
+      sendInfo('e');
+    }
+    instructionString = "";
+    stringValueReceived = "";
+    stringReceived = false;
+  }
+//    delay(200);
   //      Serial.println(analogRead(A4));
   //    Serial.println(sensorFR.distance());
   //     avoidObs();
   //    Export_Sensors();
-  //      left(90.0);
+//        left(90.0);
 
   //    else if (instructionString == "d")
-  //      right (90.0);
+//        right (90.0);
   //    else
   //      instructionString = "";
   //    Serial.print("Executed " + instructionString);
@@ -168,7 +168,7 @@ void loop()
   /*
      Wall Alignment Test
   */
-//  wall_alignment();
+  //  wall_alignment();
   //d=Ultra_Sensor();
   //Serial.print(d);
   //Serial.print("  ");
@@ -217,7 +217,7 @@ void loop()
   //    delay(100);
   //    right(90.0);
   //    delay(100);
-//      while (1) {}
+  //      while (1) {}
 
 
 }
@@ -225,165 +225,45 @@ void loop()
 
 void wall_alignment()
 {
-  double fl, fm, fr, angle, sensorA, sensorB;
-  uint8_t choice = 0;
-  fl = final_MedianRead(irFL);
-  fm = final_MedianRead(irFM);
-  fr = final_MedianRead(irFR);
-  Serial.print("fl: ");
-  Serial.print(fl);
-  Serial.print("   fm: ");
-  Serial.print(fm);
-  Serial.print("   fr: ");
-  Serial.println(fr);
-  if (fl != -1) {
-    if (fr != -1) {
-      sensorA = fl;
-      sensorB = fr;
-      choice = 0;
-    }
-    else {
-      sensorA = fl;
-      sensorB = fm;
-      choice = 1;
-    }
-  }
-  else if (fr != -1) {
-    sensorA = fm;
-    sensorB = fr;
-    choice = 2;
-  }
-  else {
-    Serial.println("return**********************************");
-    return;
-  }
+  double fl, fm, fr, angle;
 
-  if (!(sensorA <= 21.0 && sensorA >= 9.0) && !(sensorB <= 21.0 && sensorB >= 9.0)) {
-    Serial.println("return**********************************");
-    return;
-  }
-  else {
-    if (sensorA == sensorB) {
-      if (sensorA == 17.0) {
-        Serial.println("return**********************************");
-        return;
-      }
-      else if (sensorA < 17.0) {
-        backward(17.0 - sensorA);
-        wall_alignment();
-      }
-      else if (sensorA > 17.0) {
-        forward(sensorA - 17.0);
-        wall_alignment();
-      }
+  fl = final_MedianRead(irFL);
+  fr = final_MedianRead(irFR);
+//  Serial.print("fl: ");
+//  Serial.print(fl);
+//  Serial.print("   fm: ");
+//  Serial.print(fm);
+//  Serial.print("   fr: ");
+//  Serial.println(fr);
+
+  if (millis() - timeStartAlign >= 8000) return;
+  
+  if (fl == fr) {
+    if (fl == 9) {
+//      Serial.println("return**********************************");
+      return;
     }
-    else {
-      if (sensorA > sensorB) {
-        if (choice == 0) {
-          angle = asin((sensorA - sensorB) / distBtwnLR);
-          right(RAD_TO_DEG * angle);
-        }
-        else if (choice == 1) {
-          angle = asin((sensorA - sensorB) / distBtwnLM);
-          right(RAD_TO_DEG * angle);
-        }
-        else {
-          angle = asin((sensorA - sensorB) / distBtwnMR);
-          right(RAD_TO_DEG * angle);
-        }
-      }
-      else {
-        if (choice == 0) {
-          angle = asin((sensorB - sensorA) / distBtwnLR);
-          left(RAD_TO_DEG * angle);
-        }
-        else if (choice == 1) {
-          angle = asin((sensorB - sensorA) / distBtwnLM);
-          left(RAD_TO_DEG * angle);
-        }
-        else {
-          angle = asin((sensorB - sensorA) / distBtwnMR);
-          left(RAD_TO_DEG * angle);
-        }
-      }
+    else if (fl < 9) {
+      backward(9 - fl);
+      wall_alignment();
+    }
+    else if (fl > 9) {
+      forward(fl - 9);
       wall_alignment();
     }
   }
+  else {
+    if (fl > fr) {
+      angle = asin((fl - fr) / distBtwnLR);
+      right(RAD_TO_DEG * angle);
+    }
+    else {
+      angle = asin((fr - fl) / distBtwnLR);
+      left(RAD_TO_DEG * angle);
+    }
+    wall_alignment();
+  }
 
-
-  //  double fl, fm, fr, lm, l_m_distance = 5.5, m_r_distance = 4.8, l_r_distance = 10.3, y1, y2, x;
-  //  boolean aligned = false, turn_right = false, turn_left = false;
-  //
-  //  int count = -9999;
-  //
-  //  while (count < 3 && aligned == false)
-  //  {
-  //
-  //    fl = final_MedianRead(irFL);
-  //    fm = final_MedianRead(irFM);
-  //    fr = final_MedianRead(irFR);
-  //
-  //    //    Serial.print(fl);
-  //    //    Serial.print("  ");
-  //    //    Serial.print(fm);
-  //    //    Serial.print("  ");
-  //    //    Serial.print(fr);
-  //    //    Serial.println("  ");
-  //
-  //    //    if (fl - fr <= fabs(2) || fl - fm <= fabs(1) || fm - fr <= fabs(1))
-  //    //      aligned = true;
-  //    //
-  //    //    if (aligned != true )
-  //
-  //
-  //    if (fl == fr || fl == fm || fm == fr)
-  //      aligned = true;
-  //
-  //    if (aligned != false )
-  //
-  //    {
-  //      // Serial.print("inside if ");
-  //      if (fl > fr)
-  //      {
-  //        y2 = fl - fr;
-  //        y1 = fm - fr;
-  //        x = m_r_distance;
-  //        turn_right = true;
-  //      }
-  //      else if (fr > fl)
-  //      {
-  //        y2 = fr - fl;
-  //        y1 = fm - fl;
-  //        x = l_m_distance;
-  //        turn_left = true;
-  //        // Serial.print("inside left ");
-  //      }
-  //
-  //
-  //      double angle_error = max(atan2(y2, l_r_distance), atan2(y1, x));
-  //      angle_error = angle_error * 360 * 7 / 44;
-  //      Serial.print("angle error ");
-  //      Serial.println(angle_error);
-  //      Serial.println(aligned);
-  //      //      Serial.print("  ");
-  //      //      Serial.print(y2);
-  //      //       Serial.print("  ");
-  //      //      Serial.println(x);
-  //
-  //
-  //      if (turn_right)
-  //      {
-  //        right(angle_error);
-  //        turn_right = false;
-  //      }
-  //      else if (turn_left)
-  //      {
-  //        left(angle_error);
-  //        turn_left = false;
-  //      }
-  //      count++;
-  //    }
-  //  }
 }
 
 
@@ -409,7 +289,7 @@ void forward(double distance) {
   en.getMotor1Revs();
   en.getMotor2Revs();
 
-  while ( distance - distanceTraversed > 0.8) {
+  while ( distance - distanceTraversed > 1.0) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -422,19 +302,19 @@ void forward(double distance) {
     distanceTraversed = (distanceL + distanceR) / 2;
 
     angular_error = distanceL - distanceR;
-    Serial.print("   Forward error: ");
-    Serial.println(distanceL - distanceR);
+    //    Serial.print("   Forward error: ");
+    //    Serial.println(distanceL - distanceR);
     //Serial.print(" ");
     //Serial.print("   Distance left: ");
     //Serial.println(distanceTraversed);
 
     PID_angular.Compute();
 
-    if (fabs(distance - distanceTraversed) < distance / 2 && v > 200) {
-      v -= 0.05;
+    if (fabs(distance - distanceTraversed) < distance / 2 && v > 180) {
+      v -= 0.06;
     }
     else if (v < 350) {
-      v = 1.001 * v;
+      v +=0.02;
     }
 
     //    Serial.print(" ");
@@ -524,7 +404,7 @@ void left(double angle) {
   en.getMotor1Revs();
   en.getMotor2Revs();
 
-  while ( angle - fabs(angleTraversed) > 2.8 ) {
+  while ( angle - fabs(angleTraversed) > 3.2 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -576,7 +456,7 @@ void right(double angle) {
   //Flush the motor revs value;
   en.getMotor1Revs();
   en.getMotor2Revs();
-  while ( angle - fabs(angleTraversed) > 2.8 ) {
+  while ( angle - fabs(angleTraversed) > 3.2 ) {
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
 
@@ -661,16 +541,16 @@ int distanceFinder(int pin)
   switch (pin)
   {
     case irFR:
-      dis = sensorFR.distance();
-//      if (dis < 7 || dis > 30) {
-//        dis = -1;
-//      }
+      dis = sensorFR.distance() + 1;
+      //      if (dis < 7 || dis > 30) {
+      //        dis = -1;
+      //      }
       break;
     case irFL:
       dis = sensorFL.distance();
-//      if (dis < 7 || dis > 30) {
-//        dis = -1;
-//      }
+      //      if (dis < 7 || dis > 30) {
+      //        dis = -1;
+      //      }
       break;
     case irFM:
       //dis = sensorFM.distance();
@@ -678,21 +558,21 @@ int distanceFinder(int pin)
       break;
     case irLF:
       dis = sensorLF.distance();
-//      if (dis < 7 || dis > 30) {
-//        dis = -1;
-//      }
+      //      if (dis < 7 || dis > 30) {
+      //        dis = -1;
+      //      }
       break;
     case irLM:
       dis = sensorLM.distance();
-//      if (dis < 7 || dis > 30) {
-//        dis = -1;
-//      }
+      //      if (dis < 7 || dis > 30) {
+      //        dis = -1;
+      //      }
       break;
     case irRM:
       dis = sensorRM.distance();
-//      if (dis < 17 || dis > 65) {
-//        dis = -1;
-//      }
+      //      if (dis < 17 || dis > 65) {
+      //        dis = -1;
+      //      }
       break;
     default:
       break;
