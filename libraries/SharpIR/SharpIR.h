@@ -34,8 +34,8 @@ class SharpIR
     
   private:
     
-    int cm();
     
+    int cm();
     int _irPin;
     int _model;
     int _avg;
