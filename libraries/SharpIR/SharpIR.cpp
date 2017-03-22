@@ -41,7 +41,6 @@
 
 #include "Arduino.h"
 #include "SharpIR.h"
-#include "math.h"
 
 
 
@@ -62,43 +61,46 @@ SharpIR::SharpIR(int irPin, int avg, int tolerance, int sensorModel) {
 // irPin is obviously the pin where the IR sensor is attached
 // avg is the number of readings the library does
 // tolerance indicates how similar a value has to be from the last value to be taken as valid. It should be a
-//    value between 0 and 100, like a %. A value of 93 would mean that one value has to be, at least, 93% to the
-//    previous value to be considered as valid.
+// value between 0 and 100, like a %. A value of 93 would mean that one value has to be, at least, 93% to the
+// previous value to be considered as valid.
 // sensorModel is a int to differentiate the two sensor models this library currently supports:
-//    1080 is the int for the GP2Y0A21Y and 20150 is the int for GP2Y0A02YK. The numbers reflect the
-//    distance range they are designed for (in cm)
+// 1080 is the int for the GP2Y0A21Y and 20150 is the int for GP2Y0A02YK. The numbers reflect the
+// distance range they are designed for (in cm)
  
 
 
 
-int SharpIR::cm() {
+double SharpIR::cm() {
     
     int raw=analogRead(_irPin);
     int voltFromRaw=map(raw, 0, 1023, 0, 5000);
-    int puntualDistance;
+    
+	float v = voltFromRaw/1000.0;
+	
+    double puntualDistance;
     
     if (_model==1) {
         
-        puntualDistance=27.728*pow(voltFromRaw/1000 - 0.01, -1.2045) + 1.0;
+        puntualDistance=27.728*pow(v + 0.01, -1.2045) + 0.15	 ;
         
     }else if (_model==2){
     
-        puntualDistance=27.728*pow(voltFromRaw/1000 - 0.04, -1.2045) + 1.35;
+        puntualDistance=27.728*pow(v - 0.04, -1.2045) + 0.58;
 
     }else if (_model==3){
     
-        puntualDistance=27.728*pow(voltFromRaw/1000 - 0.04, -1.2045) + 1.1;
+        puntualDistance=27.728*pow(v - 0, -1.2045) + 0.4;
         
     }else if (_model==4){
     
-        puntualDistance=27.728*pow(voltFromRaw/1000 - 0, -1.2045) + 0.7;
+        puntualDistance=27.728*pow(v - 0, -1.2045) + 0.4;
 
         
     }else if (_model==5){
-		puntualDistance=-18.5*(voltFromRaw/1000)+70.8;
-		//puntualDistance=61.573*pow(voltFromRaw/1000 - 0.253, -0.8) - 9.5;
-        //puntualDistance=370*pow(voltFromRaw/1000 + 2.1, -1.22) - 35;
-		//61.573*pow(voltFromRaw/1000, -1.1068);
+		puntualDistance=-18.5*(v)+70.8;
+		//puntualDistance=61.573*pow(v - 0.253, -0.8) - 9.5;
+        //puntualDistance=370*pow(v + 2.1, -1.22) - 35;
+		//61.573*pow(v, -1.1068);
         
     }
     
@@ -110,29 +112,31 @@ int SharpIR::cm() {
 
 
 
-int SharpIR::distance() {
+double SharpIR::distance() {
 
-    _p=0;
-    _sum=0.0;
+    _p = 0;
+    _sum = 0.0;
 
-    
     for (int i=0; i<_avg; i++){
         
-        int foo=cm();
-        
+        double foo = cm();
+		//if (_model==4){
+		//	Serial.println(foo);
+		//}
         if (foo>=(_tol*_previousDistance)){
         
             _previousDistance=foo;
             _sum=_sum+foo;
             _p++;
-            
+            continue;
         }
         
+		i--;
         
     }
 
     
-    int accurateDistance=_sum/_p;
+    double accurateDistance = _sum / _p;
     
     return accurateDistance;
 

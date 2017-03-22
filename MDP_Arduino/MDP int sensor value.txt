@@ -1,0 +1,105 @@
+//int final_MedianRead(int tpin) {
+//  float x[15];
+//
+//
+//  if (tpin == irFM)
+//    return Ultra_Sensor() * 1.015 + 0.5;
+//
+//  for (int i = 0; i < 15; i ++) {
+//    x[i] = distanceFinder(tpin);
+//  }
+//  insertionsort(x, 15);
+//  return x[7];
+//}
+//
+///*
+//   fs 7-15 1 block, 16-22 2 blocks
+//*/
+//float distanceFinder(int pin)
+//{
+//  int dis = 0;
+//  switch (pin)
+//  {
+//    case irFR:
+//      dis = sensorFR.distance();
+//      break;
+//    case irFL:
+//      dis = sensorFL.distance();
+//      break;
+//    case irFM:
+//      dis = Ultra_Sensor();
+//      break;
+//    case irLF:
+//      dis = sensorLF.distance();
+//      break;
+//    case irLM:
+//      dis = sensorLM.distance();
+//      break;
+//    case irRM:
+//      dis = sensorRM.distance();
+//      break;
+//    default:
+//      break;
+//  }
+//  return dis;
+//}
+//
+//void PWM_Mode_Setup()
+//{
+//  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3
+//  int URTRIG = 12; // PWM trigger pin 5
+//  uint8_t EnPwmCmd[4] = {0x44, 0x02, 0xbb, 0x01};
+//  pinMode(URTRIG, OUTPUT);                    // A low pull on pin COMP/TRIG
+//  digitalWrite(URTRIG, HIGH);                 // Set to HIGH
+//
+//  pinMode(URPWM, INPUT);                      // Sending Enable PWM mode command
+//
+//  for (int i = 0; i < 4; i++)
+//  {
+//    Serial.write(EnPwmCmd[i]);
+//  }
+//}
+//
+//float Ultra_Sensor()
+//{ // a low pull on pin COMP/TRIG  triggering a sensor reading
+//  int URPWM = 6; // PWM Output 0-25000US,Every 50US represent 1cm 3 yellow
+//  int URTRIG = 12; // PWM trigger pin 5 green
+//  float Distance = 0;
+//  digitalWrite(URTRIG, LOW);
+//  digitalWrite(URTRIG, HIGH);               // reading Pin PWM will output pulses
+//
+//  unsigned long DistanceMeasured = pulseIn(URPWM, LOW);
+//
+//  if (DistanceMeasured >= 10200)
+//  { // the reading is invalid.
+//    //Serial.println("Invalid");
+//    Distance = -1;
+//  }
+//  else
+//  {
+//    Distance = DistanceMeasured / 50.0;       // every 50us low level stands for 1cm
+//    // Serial.print("Distance=");
+//    // Serial.print(Distance);
+//    // Serial.println("cm");
+//  }
+//
+//  return Distance;
+//}
+//
+//
+//void insertionsort(float array[], int length)
+//{
+//  double temp;
+//  for (int i = 1; i < length; i++) {
+//    for (int j = i; j > 0; j--) {
+//      if (array[j] < array[j - 1])
+//      {
+//        temp = array[j];
+//        array[j] = array[j - 1];
+//        array[j - 1] = temp;
+//      }
+//      else
+//        break;
+//    }
+//  }
+//}
