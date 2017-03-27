@@ -25,7 +25,6 @@
 #define turn_ki 50.0
 #define turn_kd 1.0
 
-
 /*
    Sensor Settings
 */
@@ -35,6 +34,7 @@
 #define LF 3
 #define LM 4
 #define RM 5
+#define FM 0
 
 #define irFM A0
 #define irFL A4
@@ -45,37 +45,25 @@
 #define distBtwnFLR 17
 
 /**
-   Function Declarations
-*/
-
-void forward(double);
-void backward(double);
-void left(double);
-void right(double);
-void readEncoder1();
-void readEncoder2();
-void getCmd();
-
-float const pi = 3.14159;
-/**
    Variable Declarations
 */
+
 String instructionString = "";
 String feedbackString = "";
 String stringValueReceived = "";
 int intValueReceived = 0;
 bool stringReceived = false;
-double d;
 long timeStartAlign = 0;
 
 DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
 
-SharpIR sensorFR(irFR, 10, 10, FR);  // (pin , no.reading b4 calculate mean dist, diff btw 2 consecutive measu taken as valid)
-SharpIR sensorFL(irFL, 10, 10, FL);
-SharpIR sensorLM(irLM, 10, 10, LM);
-SharpIR sensorLF(irLF, 10, 10, LF);
-SharpIR sensorRM(irRM, 10, 10, RM);
+SharpIR sensorFR(irFR, 10, 93, FR);  // (pin , no.reading b4 calculate mean dist, diff btw 2 consecutive measu taken as valid)
+SharpIR sensorFL(irFL, 10, 93, FL);
+SharpIR sensorLM(irLM, 10, 93, LM);
+SharpIR sensorLF(irLF, 10, 93, LF);
+SharpIR sensorRM(irRM, 10, 93, RM);
+SharpIR sensorFM(irFM, 10, 93, FM);
 
 
 void setup()
@@ -86,7 +74,7 @@ void setup()
 
   pinMode(irFR, INPUT);
   pinMode(irFL, INPUT);
-  //pinMode(irFM, INPUT);
+  pinMode(irFM, INPUT);
   pinMode(irRM, INPUT);
   pinMode(irLF, INPUT);
   pinMode(irLM, INPUT);
@@ -102,6 +90,8 @@ void setup()
   digitalWrite(irRM, LOW);
   digitalWrite(irLM, LOW);
   digitalWrite(irLF, LOW);
+  digitalWrite(irFM, LOW);
+ 
 
   //  Attach interrupts to encoder pins
   attachInterrupt(digitalPinToInterrupt(enA2), readEncoder2, FALLING);
@@ -115,78 +105,67 @@ void setup()
 
 void loop()
 {
-  //  if (stringReceived)  {
-  //    if (instructionString[0] == 'm') {
-  //      if (instructionString[1] == 'w') {
-  //        forward(intValueReceived,false);
-  //        sendInfo(instructionString[1]);
-  //      }
-  //      else if (instructionString[1] == 's') {
-  //        backward(intValueReceived);
-  //        sendInfo(instructionString[1]);
-  //      }
-  //      else if (instructionString[1] == 'a') {
-  //        left(90.0, false);
-  //        sendInfo(instructionString[1]);
-  //      }
-  //      else if (instructionString[1] == 'd') {
-  //        right (90.0, false);
-  //        sendInfo(instructionString[1]);
-  //      }
-  //      else if (instructionString[1] == 'l') {
-  //        timeStartAlign = millis();
-  //        wall_alignment();
-  //        sendInfo(instructionString[1]);
-  //      }
-  //      else
-  //        instructionString = "";
-  //    }
-  //    else if (instructionString.equals(String("start\n"))) {
-  //      sendInfo('e');
-  //    }
-  //    instructionString = "";
-  //    stringValueReceived = "";
-  //    stringReceived = false;
-  //  }
+    if (stringReceived)  {
+      if (instructionString[0] == 'm') {
+        if (instructionString[1] == 'w') {
+          forward(intValueReceived,false);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 's') {
+          backward(intValueReceived);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 'a') {
+          left(90.0, false);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 'd') {
+          right (90.0, false);
+          sendInfo(instructionString[1]);
+        }
+        else if (instructionString[1] == 'l') {
+          timeStartAlign = millis();
+          wall_alignment();
+          sendInfo(instructionString[1]);
+        }
+        else
+          instructionString = "";
+      }
+      else if (instructionString.equals(String("start\n"))) {
+        sendInfo('e');
+      }
+      instructionString = "";
+      stringValueReceived = "";
+      stringReceived = false;
+    }
 
-  //  Sensor Calibration
-
-  //Serial.println(sensorRM.cm());
-  sendInfo('e');
-  delay(100);
-
-  //Movement Calibration
-
-  //      left(90.0,false);
-  //        right(90.0,false);
-  //      forward(100);
-  //    for ( int i = 0; i < 10; i++) {
-  //      delay(100);
-  //      forward(10.0);
-  //    }
-  //
-  //    while (1) {}
-  //     Wall Alignment Test
-  //  wall_alignment();
-
-  //  right(90.0);
-  //  while(1){}
-  //d=Ultra_Sensor();
-  //Serial.print(d);
-  //Serial.print("  ");
-  //  delay(200);
-
-  //  sendInfo('x');
+  // Calibration
+//  sensorCalibration();
+//Serial.println(analogRead(A0));
+//delay(100);
+//    movementCalibration('s');
+//    wall_alignment();
+//    while(1){}
 
   //Path Test
+//     delay(100);
+//     forward(40.0,false);
   //   delay(100);
   //   forward(10.0);
   //   delay(100);
   //   forward(10.0);
-  //   delay(100);
+//     delay(100);
+//     right(90.0,false);
+//     delay(100);
+//     forward(40.0,false);
+//     delay(100);
   //   forward(10.0);
   //   delay(100);
-  //   right(90.0);
+//     left(90.0,false);
+//     delay(100);
+//     forward(40.0,false);
+  //   delay(100);
+  //   forward(10.0);
   //   delay(100);
   //   forward(10.0);
   //   delay(100);
@@ -198,24 +177,13 @@ void loop()
   //   delay(100);
   //   forward(10.0);
   //   delay(100);
-  //   forward(10.0);
-  //   delay(100);
-  //   forward(10.0);
-  //   delay(100);
-  //   left(90.0);
-  //   delay(100);
-  //   forward(10.0);
-  //   delay(100);
-  //   forward(10.0);
-  //   delay(100);
   //   right(90.0);
   //   delay(100);
   //   forward(10.0);
   //   delay(100);
   //   forward(10.0);
   //   delay(100);
-
-
+//  while(1){}
 }
 
 
@@ -225,14 +193,11 @@ void wall_alignment()
 
   fl = final_MedianRead(irFL);
   fr = final_MedianRead(irFR);
-  //  Serial.print("fl: ");
-  //  Serial.print(fl);
-  //  Serial.print("   fm: ");
-  //  Serial.print(fm);
-  //  Serial.print("   fr: ");
-  //  Serial.println(fr);
 
-  if (millis() - timeStartAlign <= 2000 && fabs(fl - fr) > 0.4) {
+  distAlign();
+  distAlign();
+
+  if (millis() - timeStartAlign <= 2000 && fabs(fl - fr) > 0.4 && fabs(fl - fr) < 6.0) {
 
     if (fl > fr) {
       angle = asin((fl - fr) / distBtwnFLR);
@@ -251,17 +216,21 @@ void wall_alignment()
 }
 
 void distAlign() {
-  double fm;
+  double dist;
 
-  fm = final_MedianRead(irFM);
+  dist = final_MedianRead(irFL);
 
-  if (fm < 5.5) {
-    //    Serial.println(10-fl);
-    backward(5.5 - fm);
+  if (dist > 15.0){
+     dist = final_MedianRead(irFR);
   }
-  else if (fm > 5.5) {
+  
+  if (dist < 10.4) {
+    //    Serial.println(10-fl);
+    backward(10.4 - dist);
+  }
+  else if (dist > 10.4) {
     //    Serial.println(fl-10);
-    forward(fm - 5.5, true);
+    forward(dist - 10.4, true);
   }
 }
 
@@ -289,12 +258,12 @@ void forward(double distance, boolean cal) {
   en.getMotor2Revs();
 
   if (cal) {
-    v = 120;
-    threshold = 1.4;
+    v = 80;
+    threshold = 0.4;
   }
   else {
-    v = 280;
-    threshold = 1.4;
+    v = 340;
+    threshold = 1.6;
   }
 
   while ( fabs(distance - distanceTraversed) > threshold) {
@@ -307,8 +276,8 @@ void forward(double distance, boolean cal) {
 
     PID_angular.Compute();
 
-    if (fabs(distance - distanceTraversed) < halfDist && v >= 250) {
-      v = (topSpeed - 250) * cos((distanceTraversed - halfDist) * (22 / 7) / (halfDist * 2)) + 250;
+    if (fabs(distance - distanceTraversed) < halfDist && v >= 300) {
+      v = (topSpeed - 300) * cos((distanceTraversed - halfDist) * (22 / 7) / (halfDist * 2)) + 300;
     }
     else if (v < 375) {
       v += 0.02;
@@ -322,8 +291,9 @@ void forward(double distance, boolean cal) {
     //    Serial.print("   w: ");
     //    Serial.println(w / 10);
 
-    md.setSpeeds((-v - w), v - w);
-    setPoint -= 0.00004;
+    md.setSpeeds((-v - w)*0.95, v - w);
+    
+    setPoint -= 0.000055;
 
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
@@ -338,7 +308,7 @@ void forward(double distance, boolean cal) {
   }
 
   md.setM1Brake(400);
-  delayMicroseconds(2500);
+  delayMicroseconds(1950);
   md.setM2Brake(400);
 }
 
@@ -352,7 +322,7 @@ void backward(double distance) {
   angular_error = 0;
   setPoint = 0.0;
   halfDist = distance / 2;
-  v = 280;
+  v = 120;
   w = 0;
 
 
@@ -363,7 +333,7 @@ void backward(double distance) {
   en.getMotor1Revs();
   en.getMotor2Revs();
 
-  while ( fabs(distance - distanceTraversed) > 0.5) {
+  while ( fabs(distance - distanceTraversed) > 0.3) {
     angular_error = distanceL - distanceR;
 
     //Serial.print("   Back error: ");
@@ -424,11 +394,11 @@ void left(double angle, boolean cal) {
 
   if (cal) {
     v = 80;
-    threshold = 0.5;
+    threshold = 0.4;
   }
   else {
-    v = 150;
-    threshold = 2.7;
+    v = 120;
+    threshold = 3.7;
   }
 
   while ( angle - fabs(angleTraversed) > threshold) {
@@ -456,7 +426,7 @@ void left(double angle, boolean cal) {
     //    Serial.print("   w: ");
     //    Serial.println(w / 10);
 
-    md.setSpeeds((v - 20 - w) * 0.85, v - 20 + w);
+    md.setSpeeds((v - w), v + w);
 
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
@@ -481,7 +451,6 @@ void right(double angle, boolean cal) {
   halfAngle = angle / 2;
   setPoint = 0.0;
   angular_error = 0;
-  v = 150;
   w = 0;
 
   PID PID_angular(&angular_error, &w, &setPoint, turn_kp, turn_ki, turn_kd, DIRECT);
@@ -493,11 +462,11 @@ void right(double angle, boolean cal) {
 
   if (cal) {
     v = 80;
-    threshold = 0.5;
+    threshold = 0.4;
   }
   else {
-    v = 150;
-    threshold = 3.2;
+    v = 120;
+    threshold = 5.2;
   }
 
   while ( angle - fabs(angleTraversed) > threshold) { //if over, increase threshold
@@ -527,7 +496,7 @@ void right(double angle, boolean cal) {
     //    Serial.println(v / 125);
     //    Serial.print("   w: ");
     //    Serial.println(w / 10);
-    md.setSpeeds((-(v - 20) - w) * 0.85, w - v - 20);
+    md.setSpeeds(-(v - w), w - v);
 
     distanceL += 2 * (22 / 7) * wheelRadius * en.getMotor1Revs();
     distanceR += 2 * (22 / 7) * wheelRadius * en.getMotor2Revs();
@@ -538,7 +507,6 @@ void right(double angle, boolean cal) {
     angular_error = distanceL + distanceR; //overshoot -> |left| > |right|
   }
   md.setM1Brake(400);
-  delay(2);
   md.setM2Brake(400);
 }
 
@@ -579,8 +547,8 @@ double final_MedianRead(int tpin) {
   double x[15];
 
 
-  if (tpin == irFM)
-    return Ultra_Sensor() * 1.015 + 0.5;
+//  if (tpin == irFM)
+//    return Ultra_Sensor() * 1.015 + 0.5;
 
   for (int i = 0; i < 15; i ++) {
     x[i] = distanceFinder(tpin);
@@ -604,7 +572,7 @@ double distanceFinder(int pin)
       dis = sensorFL.distance();
       break;
     case irFM:
-      dis = Ultra_Sensor();
+      dis = sensorFM.distance();
       break;
     case irLF:
       dis = sensorLF.distance();
@@ -702,4 +670,31 @@ void serialEvent() {
   }
 }
 
+void sensorCalibration() {
+  sendInfo('e');
+  delay(100);
+}
+
+void movementCalibration(char c) {
+  if (c == 'a') {
+    left(90.0, false);
+    delay(200);
+  }
+  else if (c == 'd') {
+    right(90.0, false);
+    delay(200);
+  }
+  else if (c == 'w') {
+    forward(80, false);
+    while (1) {}
+  }
+  else if (c == 's') {
+    for ( int i = 0; i < 8; i++) {
+      delay(200);
+      forward(10.0, false);
+    }
+    while (1) {}
+  }
+  
+}
 
