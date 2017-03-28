@@ -41,6 +41,7 @@
 
 #include "Arduino.h"
 #include "SharpIR.h"
+#include "math.h"
 
 
 
@@ -78,10 +79,14 @@ double SharpIR::cm() {
 	float v = voltFromRaw/1000.0;
 	
     double puntualDistance;
-    
-    if (_model==1) {
+	
+	if (_model==0) {
         
-        puntualDistance=27.728*pow(v + 0.01, -1.2045) + 0.15	 ;
+        puntualDistance=27.728*pow(v + 0.09, -1.2045) + 0.31;
+        
+    }else if (_model==1) {
+        
+        puntualDistance=27.728*pow(v + 0.01, -1.2045) + 0.15;	
         
     }else if (_model==2){
     
@@ -97,8 +102,8 @@ double SharpIR::cm() {
 
         
     }else if (_model==5){
-		puntualDistance=-18.5*(v)+70.8;
-		//puntualDistance=61.573*pow(v - 0.253, -0.8) - 9.5;
+		//puntualDistance=-18.5*(v)+70.8;
+		puntualDistance=61.573*pow(v - 0.253, -0.8) - 9.5;
         //puntualDistance=370*pow(v + 2.1, -1.22) - 35;
 		//61.573*pow(v, -1.1068);
         
@@ -116,28 +121,28 @@ double SharpIR::distance() {
 
     _p = 0;
     _sum = 0.0;
-
+	
+	_previousDistance = 0.0;
+	
     for (int i=0; i<_avg; i++){
         
         double foo = cm();
-		//if (_model==4){
-		//	Serial.println(foo);
-		//}
+		
         if (foo>=(_tol*_previousDistance)){
         
             _previousDistance=foo;
+			
             _sum=_sum+foo;
             _p++;
-            continue;
         }
-        
-		i--;
-        
+		
     }
-
-    
+	
     double accurateDistance = _sum / _p;
     
+	if (isinf(accurateDistance) || _p == 0){
+		return 1000.0;
+	}
     return accurateDistance;
 
 }
