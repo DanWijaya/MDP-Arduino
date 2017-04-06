@@ -1,31 +1,16 @@
 # MDP-Arduino
-This repository was submitted as part of the CZ3004 - Multidisciplinary Project module at Nanyang Technological University.
+<i>Disclaimer - This repository was submitted as part of the CZ3004 - Multidisciplinary Project course at Nanyang Technological University and is no longer maintained.</i>
 
-# Notes
-## Available Pin:
-* 2	INA1
-* 3	ENA1
-* 4	INB1
-* 5	ENB1
-* 6	EN1DIAG1
-* 7	INA2
-* 8	INB2
-* 9	PW1
-* 10	PW2
-* 11	ENA2
-* 12	EN2DIAG2
-* 13	free
-* A0	CS1
-* A1	CS2
-* A2	free
-* A3	free
-* A4	free
-* A5	free
+This repository contains a low level controller for a two wheel differential drive robot. The arduino code provides odometry data using encoder counts and sensor outputs from 5 SharpIR sensors. This repository is part of a bigger project to drive the robot autonomously through a maze to achieve two tasks - Exploration and Solving the maze in the fastest possible path.
 
-## Motor Info:
-* Motor 1
-	* 400 -> -134rpm -> -193
-	* -400 ->  140rpm ->  195
-* Motor 2
-	* 400 ->  146rpm ->  196
-	* -400 -> -150rpm -> -208
+# Schematic
+
+
+
+# Running the Code
+Once the circuit is built according to the schematic above,the code can be uploaded to the Arduino using the [Arduino IDE](https://www.arduino.cc/)
+
+# Contributors
+1. [nikv96](https://github.com/nikv96)
+2. [jazzseow](https://github.com/jazzseow)
+3. [achhabra95](https://github.com/achhabra95)
