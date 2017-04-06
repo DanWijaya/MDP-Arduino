@@ -3,7 +3,7 @@
 
 This repository contains a low level controller for a two wheel differential drive robot. The arduino code provides odometry data using encoder counts and sensor outputs from 5 SharpIR sensors. This repository is part of a bigger project to drive the robot autonomously through a maze to achieve two tasks - Exploration and Solving the maze in the fastest possible path.
 
-![The Robot](robot.jpeg)
+![The Robot](Robot.jpeg)
 
 
 # Components Used
