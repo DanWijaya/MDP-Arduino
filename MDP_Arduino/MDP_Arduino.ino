@@ -45,7 +45,7 @@
 #define distBtwnFLR 17
 
 /**
-   Variable Declarations
+   Global Variable Declarations
 */
 
 String instructionString = "";
@@ -59,7 +59,8 @@ long timeStartAlign = 0;
 DualVNH5019MotorShield md;
 Encoder en(enA1, enB1, enA2, enB2);
 
-SharpIR sensorFR(irFR, 15, 50, FR);  // (pin , no.reading b4 calculate mean dist, diff btw 2 consecutive measu taken as valid)
+// (pin , # readings before mean calculation, difference between 2 consecutive readings to be taken as valid, number)
+SharpIR sensorFR(irFR, 15, 50, FR);  
 SharpIR sensorFL(irFL, 15, 50, FL);
 SharpIR sensorLM(irLM, 15, 50, LM);
 SharpIR sensorLF(irLF, 15, 50, LF);
@@ -67,8 +68,7 @@ SharpIR sensorRM(irRM, 15, 50, RM);
 SharpIR sensorFM(irFM, 15, 50, FM);
 
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   md.init();
   en.init();
@@ -92,21 +92,18 @@ void setup()
   digitalWrite(irLM, LOW);
   digitalWrite(irLF, LOW);
   digitalWrite(irFM, LOW);
-
-
-  //  Attach interrupts to encoder pins
+  
   attachInterrupt(digitalPinToInterrupt(enA2), readEncoder2, FALLING);
   PCintPort::attachInterrupt(enA1, readEncoder1, FALLING);
 
-  //  PWM_Mode_Setup();
+  // DEBUG
+  //PWM_Mode_Setup();
 
-  // Serial data
   instructionString.reserve(200);
 }
 
 
-void loop()
-{
+void loop() {
   if (stringReceived)  {
     if (instructionString[0] == 'm') {
       switch (instructionString[1]) {
@@ -169,13 +166,13 @@ void loop()
   }
 
   // Calibration
-  //     sensorCalibration();
-  //    delay(100);
-  //      movementCalibration('a');
+  // sensorCalibration();
+  // delay(100);
+  // movementCalibration('a');
   // wall_alignment();
-  //  while(1){}
+  // while(1){}
 
-  //Path Test
+  //  Path Calibration
   //  delay(100);
   //  forward(20.0, false);
   //  delay(100);
@@ -444,6 +441,7 @@ void right(double angle, boolean cal) {
 
   while ( angle - fabs(angleTraversed) > threshold) { //if over, increase threshold
 
+    //    DEBUG 
     //    Serial.print("   L: ");
     //    Serial.print(distanceL);
     //    Serial.print("   R: ");
@@ -466,6 +464,7 @@ void right(double angle, boolean cal) {
       }
     }
 
+    //    DEBUG
     //    Serial.print(" ");
     //    Serial.print("   v: ");
     //    Serial.println(v / 125);
@@ -568,9 +567,7 @@ double distanceFinder(int pin)
   return dis;
 }
 
-void insertionsort(double array[], int length)
-{
-
+void insertionsort(double array[], int length) {
   double temp;
   for (int i = 1; i < length; i++) {
     for (int j = i; j > 0; j--) {
@@ -590,8 +587,9 @@ void serialEvent() {
   while (Serial.available()) {
     char inChar = (char)Serial.read();
     instructionString += inChar;
+    //    DEBUG
     //    Serial.print("Serial event char: ");
-    //            Serial.println(inChar);
+    //    Serial.println(inChar);
     if (inChar == '\n') {
       int i = 2;
       while (instructionString[i] != '\n') {
@@ -632,6 +630,5 @@ void movementCalibration(char c) {
     }
     while (1) {}
   }
-
 }
 

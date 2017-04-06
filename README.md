@@ -1,9 +1,5 @@
 # MDP-Arduino
-Two wheel differetial drive robot controller.
-
-# Libraries
-1. [SharpIR Sensor Library](https://dl.dropboxusercontent.com/u/21592548/SharpIR.zip)
-2. [Motor Driver Shield Library](https://github.com/pololu/dual-vnh5019-motor-shield/archive/master.zip)
+This repository was submitted as part of the CZ3004 - Multidisciplinary Project module at Nanyang Technological University.
 
 # Notes
 ## Available Pin:
